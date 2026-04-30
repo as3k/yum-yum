@@ -19,7 +19,7 @@ export default function ViolationsPanel({
       <div className="flex items-center gap-2 px-4 py-3 bg-muted border-b border-border">
         <AlertTriangle size={14} className="shrink-0" />
         <span className="text-sm font-medium">
-          {violations.length} issue{violations.length > 1 ? "s" : ""} found
+          {violations.length} thing{violations.length > 1 ? "s" : ""} to look at
         </span>
         <span className="text-xs text-muted-foreground">FODMAP / carb flags</span>
       </div>
@@ -45,7 +45,7 @@ export default function ViolationsPanel({
 
             {v.suggestion && (
               <p className="text-xs text-muted-foreground">
-                Suggestion: <span className="text-foreground">{v.suggestion}</span>
+                Try this: <span className="text-foreground">{v.suggestion}</span>
               </p>
             )}
 
@@ -64,7 +64,7 @@ export default function ViolationsPanel({
                 className="flex items-center gap-1 text-xs font-medium px-2 py-1 bg-muted text-muted-foreground rounded hover:text-foreground transition-colors"
               >
                 <SkipForward size={11} />
-                Skip
+                Skip for now
               </button>
             </div>
           </div>

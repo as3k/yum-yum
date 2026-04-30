@@ -11,7 +11,7 @@ export default async function FavoritesPage() {
   if (!userId) {
     return (
       <div className="max-w-2xl mx-auto px-4 pt-10 text-center">
-        <p className="text-muted-foreground text-sm">Sign in to see favorites.</p>
+        <p className="text-muted-foreground text-sm">Sign in to see your saved favorites.</p>
       </div>
     )
   }
@@ -25,7 +25,7 @@ export default async function FavoritesPage() {
     return (
       <div className="max-w-2xl mx-auto px-4 pt-10 text-center">
         <h1 className="text-xl font-semibold tracking-tight mb-3">Favorites</h1>
-        <p className="text-muted-foreground text-sm">No favorites yet. Tap the heart on any recipe to save it.</p>
+        <p className="text-muted-foreground text-sm">No favorites yet! Tap the heart on any recipe to save the good stuff.</p>
       </div>
     )
   }

@@ -12,7 +12,7 @@ export default async function GroceryPage() {
   if (!list) {
     return (
       <div className="max-w-2xl mx-auto px-4 pt-10 text-center">
-        <p className="text-muted-foreground text-sm">No grocery list yet.</p>
+        <p className="text-muted-foreground text-sm">No grocery list yet — plan a week first!</p>
       </div>
     )
   }
@@ -38,7 +38,7 @@ export default async function GroceryPage() {
         <div>
           <h1 className="text-xl font-semibold tracking-tight">Grocery List</h1>
           <p className="text-sm text-muted-foreground mt-0.5">
-            {formatWeekRange(list.weekStart)} · {checkedCount}/{totalCount} checked
+            {formatWeekRange(list.weekStart)} · {checkedCount} of {totalCount} grabbed
           </p>
         </div>
       </div>

@@ -1,3 +1,9 @@
+export function todayStr(timeZone?: string): string {
+  return new Date().toLocaleDateString("en-CA", {
+    timeZone: timeZone ?? process.env.APP_TIMEZONE ?? "UTC",
+  })
+}
+
 export function slugify(text: string): string {
   return text
     .toLowerCase()
@@ -44,7 +50,11 @@ export function cn(...classes: (string | undefined | false | null)[]): string {
 export function addDays(dateStr: string, days: number): string {
   const d = new Date(dateStr + "T00:00:00")
   d.setDate(d.getDate() + days)
-  return d.toISOString().split("T")[0]
+  return [
+    d.getFullYear(),
+    String(d.getMonth() + 1).padStart(2, "0"),
+    String(d.getDate()).padStart(2, "0"),
+  ].join("-")
 }
 
 export function getWeekDates(weekStart: string): string[] {

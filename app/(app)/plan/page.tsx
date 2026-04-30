@@ -4,8 +4,10 @@ import { desc, eq, lte } from "drizzle-orm"
 import Link from "next/link"
 import WeekGrid from "@/components/week-grid"
 import PlanEditor, { type EditableDay, type RecipeOption } from "@/components/plan-editor"
-import { formatWeekRange, getNextWeekStart, getWeekDates } from "@/lib/utils"
+import { formatWeekRange, getNextWeekStart, getWeekDates, todayStr, getMondayOfWeek } from "@/lib/utils"
 import { auth } from "@/lib/auth"
+import { cookies } from "next/headers"
+import { Calendar } from "lucide-react"
 
 export default async function PlanPage({
   searchParams,
@@ -13,7 +15,8 @@ export default async function PlanPage({
   searchParams: Promise<{ week?: string }>
 }) {
   const { week: weekParam } = await searchParams
-  const today = new Date().toISOString().split("T")[0]
+  const tz = decodeURIComponent((await cookies()).get("tz")?.value ?? "")
+  const today = todayStr(tz || undefined)
 
   // Current/most-recent plan
   const currentPlan = await db.query.mealPlans.findFirst({
@@ -21,22 +24,35 @@ export default async function PlanPage({
     orderBy: [desc(mealPlans.weekStart)],
   })
 
-  const currentWeekStart = currentPlan?.weekStart ?? today
-  const nextWeekStart = getNextWeekStart(currentWeekStart)
-  const isNextWeek = weekParam === nextWeekStart
+  // Snap to Monday of current week as fallback
+  const todayDate = new Date(today + "T00:00:00")
+  const monday = getMondayOfWeek(todayDate)
+  const thisWeekMonday = [
+    monday.getFullYear(),
+    String(monday.getMonth() + 1).padStart(2, "0"),
+    String(monday.getDate()).padStart(2, "0"),
+  ].join("-")
 
-  // ── Next week view (editable) ───────────────────────────────────────────────
-  if (isNextWeek) {
+  const currentWeekStart = currentPlan?.weekStart ?? thisWeekMonday
+  const nextWeekStart = getNextWeekStart(currentWeekStart)
+
+  // Editable when: next week tab OR current week tab with no existing plan
+  const isEditing =
+    weekParam === nextWeekStart ||
+    (weekParam === currentWeekStart && !currentPlan)
+
+  // ── Editable view ──────────────────────────────────────────────────────────
+  if (isEditing && weekParam) {
     const session = await auth()
     const userId = session?.user?.id
 
-    const [nextPlan, allRecipes, favorites] = await Promise.all([
-      db.query.mealPlans.findFirst({ where: eq(mealPlans.weekStart, nextWeekStart) }),
+    const [existingPlan, allRecipes, favorites] = await Promise.all([
+      db.query.mealPlans.findFirst({ where: eq(mealPlans.weekStart, weekParam) }),
       db.query.recipes.findMany(),
       userId ? db.query.userRecipeFavorites.findMany() : Promise.resolve([]),
     ])
 
-    const existingSlots = nextPlan
+    const existingSlots = existingPlan
       ? await db
           .select({
             id: mealPlanSlots.id,
@@ -48,7 +64,7 @@ export default async function PlanPage({
           })
           .from(mealPlanSlots)
           .leftJoin(recipes, eq(mealPlanSlots.recipeId, recipes.id))
-          .where(eq(mealPlanSlots.mealPlanId, nextPlan.id))
+          .where(eq(mealPlanSlots.mealPlanId, existingPlan.id))
       : []
 
     const favoriteIds = new Set(favorites.map((f) => f.recipeId))
@@ -61,60 +77,44 @@ export default async function PlanPage({
       isFavorited: favoriteIds.has(r.id),
     }))
 
-    const weekDates = getWeekDates(nextWeekStart)
+    const weekDates = getWeekDates(weekParam)
+    const slot = (date: string, type: string) =>
+      existingSlots.find((s) => s.dayDate === date && s.mealType === type && s.recipeId)
+
     const initialDays: EditableDay[] = weekDates.map((date) => ({
       date,
-      breakfast:
-        existingSlots.find((s) => s.dayDate === date && s.mealType === "breakfast" && s.recipeId)
-          ? {
-              id: existingSlots.find((s) => s.dayDate === date && s.mealType === "breakfast")!.id,
-              recipeId: existingSlots.find((s) => s.dayDate === date && s.mealType === "breakfast")!.recipeId!,
-              recipeTitle: existingSlots.find((s) => s.dayDate === date && s.mealType === "breakfast")!.recipeTitle ?? "",
-              recipeSlug: existingSlots.find((s) => s.dayDate === date && s.mealType === "breakfast")!.recipeSlug ?? "",
-            }
-          : null,
-      lunch:
-        existingSlots.find((s) => s.dayDate === date && s.mealType === "lunch" && s.recipeId)
-          ? {
-              id: existingSlots.find((s) => s.dayDate === date && s.mealType === "lunch")!.id,
-              recipeId: existingSlots.find((s) => s.dayDate === date && s.mealType === "lunch")!.recipeId!,
-              recipeTitle: existingSlots.find((s) => s.dayDate === date && s.mealType === "lunch")!.recipeTitle ?? "",
-              recipeSlug: existingSlots.find((s) => s.dayDate === date && s.mealType === "lunch")!.recipeSlug ?? "",
-            }
-          : null,
-      dinner:
-        existingSlots.find((s) => s.dayDate === date && s.mealType === "dinner" && s.recipeId)
-          ? {
-              id: existingSlots.find((s) => s.dayDate === date && s.mealType === "dinner")!.id,
-              recipeId: existingSlots.find((s) => s.dayDate === date && s.mealType === "dinner")!.recipeId!,
-              recipeTitle: existingSlots.find((s) => s.dayDate === date && s.mealType === "dinner")!.recipeTitle ?? "",
-              recipeSlug: existingSlots.find((s) => s.dayDate === date && s.mealType === "dinner")!.recipeSlug ?? "",
-            }
-          : null,
-      snack:
-        existingSlots.find((s) => s.dayDate === date && s.mealType === "snack" && s.recipeId)
-          ? {
-              id: existingSlots.find((s) => s.dayDate === date && s.mealType === "snack")!.id,
-              recipeId: existingSlots.find((s) => s.dayDate === date && s.mealType === "snack")!.recipeId!,
-              recipeTitle: existingSlots.find((s) => s.dayDate === date && s.mealType === "snack")!.recipeTitle ?? "",
-              recipeSlug: existingSlots.find((s) => s.dayDate === date && s.mealType === "snack")!.recipeSlug ?? "",
-            }
-          : null,
+      breakfast: slot(date, "breakfast")
+        ? { id: slot(date, "breakfast")!.id, recipeId: slot(date, "breakfast")!.recipeId!, recipeTitle: slot(date, "breakfast")!.recipeTitle ?? "", recipeSlug: slot(date, "breakfast")!.recipeSlug ?? "" }
+        : null,
+      lunch: slot(date, "lunch")
+        ? { id: slot(date, "lunch")!.id, recipeId: slot(date, "lunch")!.recipeId!, recipeTitle: slot(date, "lunch")!.recipeTitle ?? "", recipeSlug: slot(date, "lunch")!.recipeSlug ?? "" }
+        : null,
+      dinner: slot(date, "dinner")
+        ? { id: slot(date, "dinner")!.id, recipeId: slot(date, "dinner")!.recipeId!, recipeTitle: slot(date, "dinner")!.recipeTitle ?? "", recipeSlug: slot(date, "dinner")!.recipeSlug ?? "" }
+        : null,
+      snack: slot(date, "snack")
+        ? { id: slot(date, "snack")!.id, recipeId: slot(date, "snack")!.recipeId!, recipeTitle: slot(date, "snack")!.recipeTitle ?? "", recipeSlug: slot(date, "snack")!.recipeSlug ?? "" }
+        : null,
     }))
+
+    const isThisWeek = weekParam === currentWeekStart
 
     return (
       <div className="max-w-2xl mx-auto px-4 pt-6 pb-4">
         <PlanHeader
           currentWeekStart={currentWeekStart}
           nextWeekStart={nextWeekStart}
-          activeWeek={nextWeekStart}
+          activeWeek={weekParam}
+          noCurrentPlan={!currentPlan}
         />
         <div className="flex items-center justify-between mb-5">
-          <h1 className="text-xl font-semibold tracking-tight">Next Week</h1>
-          <span className="text-sm text-muted-foreground">{formatWeekRange(nextWeekStart)}</span>
+          <h1 className="text-xl font-semibold tracking-tight">
+            {isThisWeek ? "This Week" : "Next Week"}
+          </h1>
+          <span className="text-sm text-muted-foreground">{formatWeekRange(weekParam)}</span>
         </div>
         <PlanEditor
-          weekStart={nextWeekStart}
+          weekStart={weekParam}
           initialDays={initialDays}
           allRecipes={recipeOptions}
         />
@@ -122,7 +122,7 @@ export default async function PlanPage({
     )
   }
 
-  // ── Current week view (read-only) ───────────────────────────────────────────
+  // ── Empty state (no plan, not in edit mode) ────────────────────────────────
   if (!currentPlan) {
     return (
       <div className="max-w-2xl mx-auto px-4 pt-6 pb-4">
@@ -130,17 +130,23 @@ export default async function PlanPage({
           currentWeekStart={currentWeekStart}
           nextWeekStart={nextWeekStart}
           activeWeek={currentWeekStart}
+          noCurrentPlan={true}
         />
-        <div className="pt-10 text-center">
-          <p className="text-muted-foreground text-sm">No meal plan yet.</p>
-          <p className="text-muted-foreground text-xs mt-1">
-            Switch to Next Week to build your first plan.
-          </p>
+        <div className="pt-16 text-center space-y-3">
+          <Calendar size={32} className="mx-auto text-muted-foreground opacity-40" />
+          <p className="text-muted-foreground text-sm">Nothing planned yet!</p>
+          <Link
+            href={`/plan?week=${currentWeekStart}`}
+            className="inline-flex items-center gap-1.5 text-sm font-medium px-4 h-9 bg-foreground text-background rounded hover:opacity-80 transition-opacity"
+          >
+            Plan this week
+          </Link>
         </div>
       </div>
     )
   }
 
+  // ── Current week read-only view ────────────────────────────────────────────
   const slots = await db
     .select({
       id: mealPlanSlots.id,
@@ -173,6 +179,7 @@ export default async function PlanPage({
         currentWeekStart={currentWeekStart}
         nextWeekStart={nextWeekStart}
         activeWeek={currentWeekStart}
+        noCurrentPlan={false}
       />
       <div className="flex items-center justify-between mb-5">
         <h1 className="text-xl font-semibold tracking-tight">This Week</h1>
@@ -187,15 +194,17 @@ function PlanHeader({
   currentWeekStart,
   nextWeekStart,
   activeWeek,
+  noCurrentPlan,
 }: {
   currentWeekStart: string
   nextWeekStart: string
   activeWeek: string
+  noCurrentPlan: boolean
 }) {
   return (
     <div className="flex gap-1 mb-6 p-1 bg-muted rounded-lg">
       <Link
-        href="/plan"
+        href={noCurrentPlan ? `/plan?week=${currentWeekStart}` : "/plan"}
         className={`flex-1 h-8 rounded text-sm font-medium flex items-center justify-center transition-colors ${
           activeWeek === currentWeekStart
             ? "bg-background text-foreground shadow-sm"

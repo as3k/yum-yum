@@ -35,6 +35,14 @@ export interface FodmapFlag {
   skipped: boolean
 }
 
+export interface NutritionData {
+  calories: number
+  carbsG: number
+  fiberG: number
+  fatG: number
+  proteinG: number
+}
+
 export const users = pgTable("users", {
   id: uuid("id").defaultRandom().primaryKey(),
   email: text("email").unique().notNull(),
@@ -62,6 +70,7 @@ export const recipes = pgTable("recipes", {
   storageNotes: text("storage_notes"),
   notes: text("notes"),
   fodmapFlags: jsonb("fodmap_flags").$type<FodmapFlag[]>().default([]),
+  nutritionPerServing: jsonb("nutrition_per_serving").$type<NutritionData>(),
   addedDate: date("added_date"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
@@ -118,6 +127,24 @@ export const mealPlanSlots = pgTable(
     notes: text("notes"),
   },
   (t) => [unique().on(t.mealPlanId, t.dayDate, t.mealType)]
+)
+
+export const meals = pgTable("meals", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  description: text("description"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+})
+
+export const mealRecipes = pgTable(
+  "meal_recipes",
+  {
+    id: serial("id").primaryKey(),
+    mealId: integer("meal_id").notNull().references(() => meals.id, { onDelete: "cascade" }),
+    recipeId: integer("recipe_id").notNull().references(() => recipes.id, { onDelete: "cascade" }),
+    sortOrder: integer("sort_order").default(0).notNull(),
+  },
+  (t) => [unique().on(t.mealId, t.recipeId)]
 )
 
 export const groceryLists = pgTable("grocery_lists", {

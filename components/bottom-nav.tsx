@@ -2,11 +2,12 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Calendar, BookOpen, ShoppingCart, Heart } from "lucide-react"
+import { Calendar, BookOpen, UtensilsCrossed, ShoppingCart, Heart } from "lucide-react"
 
 const links = [
   { href: "/plan", icon: Calendar, label: "Plan" },
   { href: "/recipes", icon: BookOpen, label: "Recipes" },
+  { href: "/meals", icon: UtensilsCrossed, label: "Meals" },
   { href: "/grocery", icon: ShoppingCart, label: "Grocery" },
   { href: "/favorites", icon: Heart, label: "Favorites" },
 ]
@@ -27,7 +28,7 @@ export default function BottomNav() {
                 active ? "text-foreground" : "text-muted-foreground"
               }`}
             >
-              <Icon size={22} strokeWidth={active ? 2.5 : 1.5} />
+              <Icon size={20} strokeWidth={active ? 2.5 : 1.5} />
               <span className="text-[11px] font-medium">{label}</span>
             </Link>
           )

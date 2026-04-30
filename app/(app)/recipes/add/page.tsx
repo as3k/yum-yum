@@ -1,4 +1,4 @@
-import ScraperForm from "@/components/scraper-form"
+import AddRecipeTabs from "@/components/add-recipe-tabs"
 import Link from "next/link"
 import { ChevronLeft } from "lucide-react"
 
@@ -13,12 +13,12 @@ export default function AddRecipePage() {
           <ChevronLeft size={16} />
           Recipes
         </Link>
-        <h1 className="text-xl font-semibold tracking-tight">Add Recipe</h1>
+        <h1 className="text-xl font-semibold tracking-tight">Add a Recipe</h1>
         <p className="text-sm text-muted-foreground mt-1">
-          Paste a recipe URL. The app will extract the recipe automatically.
+          Search for inspiration or paste a URL to import.
         </p>
       </div>
-      <ScraperForm />
+      <AddRecipeTabs />
     </div>
   )
 }

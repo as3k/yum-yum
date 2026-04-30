@@ -55,6 +55,11 @@ export default function PlanEditor({
   const [generating, startGenerate] = useTransition()
   const [, startSave] = useTransition()
   const [error, setError] = useState("")
+  const [reasoning, setReasoning] = useState("")
+  const [showInterview, setShowInterview] = useState(false)
+  const [mood, setMood] = useState("")
+  const [cravings, setCravings] = useState("")
+  const [vibe, setVibe] = useState<"familiar" | "adventurous" | "balanced">("balanced")
 
   function handlePickRecipe(recipe: RecipeOption) {
     if (!editingSlot) return
@@ -92,10 +97,18 @@ export default function PlanEditor({
   }
 
   function handleGenerate() {
+    setShowInterview(false)
     setError("")
+    setReasoning("")
     startGenerate(async () => {
       try {
-        const result = await generateAIMealPlan(weekStart)
+        const context = [
+          mood && `Mood/energy: ${mood}`,
+          cravings && `Cravings: ${cravings}`,
+          vibe !== "balanced" && `Preference: more ${vibe} meals this week`,
+        ].filter(Boolean).join(". ")
+        const result = await generateAIMealPlan(weekStart, context || undefined)
+        if (result.reasoning) setReasoning(result.reasoning)
         setDays((prev) => {
           const next = prev.map((day) => ({ ...day }))
           for (const s of result.slots) {
@@ -115,7 +128,7 @@ export default function PlanEditor({
           return next
         })
       } catch {
-        setError("Generation failed. Check ANTHROPIC_API_KEY in Doppler.")
+        setError("Oops! The AI got a little lost. Check OPENAI_API_KEY in Doppler.")
       }
     })
   }
@@ -135,24 +148,107 @@ export default function PlanEditor({
   return (
     <div className="space-y-4">
       <button
-        onClick={handleGenerate}
+        onClick={() => setShowInterview(true)}
         disabled={generating}
         className="w-full h-11 border border-border rounded-lg text-sm font-medium flex items-center justify-center gap-2 hover:bg-muted transition-colors disabled:opacity-40"
       >
         {generating ? (
           <>
             <Loader2 size={15} className="animate-spin" />
-            Generating…
+            Thinking up good stuff…
           </>
         ) : (
           <>
             <Sparkles size={15} />
-            Generate with AI
+            Plan my week
           </>
         )}
       </button>
 
       {error && <p className="text-sm text-red-500">{error}</p>}
+
+      {reasoning && (
+        <div className="rounded-lg border border-border bg-muted p-4 space-y-1">
+          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Here's why I picked these</p>
+          <p className="text-sm leading-relaxed">{reasoning}</p>
+        </div>
+      )}
+
+      {/* Interview modal */}
+      {showInterview && (
+        <div className="fixed inset-0 z-50 flex flex-col bg-background">
+          <div className="flex items-center gap-3 px-4 h-14 border-b border-border shrink-0">
+            <button
+              onClick={() => setShowInterview(false)}
+              className="text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <X size={18} />
+            </button>
+            <div>
+              <p className="text-sm font-medium">Quick vibe check!</p>
+              <p className="text-xs text-muted-foreground">A few questions so I can plan something great</p>
+            </div>
+          </div>
+
+          <div className="flex-1 overflow-y-auto px-4 py-6 space-y-6">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">How's your energy this week?</label>
+              <input
+                type="text"
+                value={mood}
+                onChange={(e) => setMood(e.target.value)}
+                placeholder="e.g. low energy, stressed, feeling amazing…"
+                className="w-full h-11 px-3 bg-muted border border-border rounded text-sm focus:outline-none focus:ring-1 focus:ring-foreground"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Any cravings? Anything you're SO over right now?</label>
+              <input
+                type="text"
+                value={cravings}
+                onChange={(e) => setCravings(e.target.value)}
+                placeholder="e.g. craving salmon, absolutely no chicken this week…"
+                className="w-full h-11 px-3 bg-muted border border-border rounded text-sm focus:outline-none focus:ring-1 focus:ring-foreground"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium">What's the vibe this week?</label>
+              <div className="grid grid-cols-3 gap-2">
+                {(["familiar", "balanced", "adventurous"] as const).map((v) => (
+                  <button
+                    key={v}
+                    onClick={() => setVibe(v)}
+                    className={`h-10 rounded text-sm font-medium capitalize transition-colors ${
+                      vibe === v
+                        ? "bg-foreground text-background"
+                        : "bg-muted text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    {v}
+                  </button>
+                ))}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {vibe === "familiar" && "Cozy classics. The foods that just feel right — less deciding, more eating."}
+                {vibe === "balanced" && "Some trusty favorites, some new adventures. The classic combo."}
+                {vibe === "adventurous" && "New recipes, new energy. Let's explore what's out there!"}
+              </p>
+            </div>
+          </div>
+
+          <div className="shrink-0 px-4 pb-8 pt-3 border-t border-border">
+            <button
+              onClick={handleGenerate}
+              className="w-full h-12 bg-foreground text-background text-sm font-medium rounded flex items-center justify-center gap-2 hover:opacity-80 transition-opacity"
+            >
+              <Sparkles size={15} />
+              Build my week!
+            </button>
+          </div>
+        </div>
+      )}
 
       <div className="space-y-2">
         {days.map((day) => (
@@ -219,7 +315,7 @@ export default function PlanEditor({
               <p className="text-xs text-muted-foreground capitalize">
                 {getDayLabel(editingSlot.date)} · {editingSlot.mealType}
               </p>
-              <p className="text-sm font-medium">Pick a recipe</p>
+              <p className="text-sm font-medium">Pick something good</p>
             </div>
           </div>
 
@@ -251,7 +347,7 @@ export default function PlanEditor({
               </button>
             ))}
             {visibleRecipes.length === 0 && (
-              <p className="px-4 py-8 text-center text-sm text-muted-foreground">No recipes found</p>
+              <p className="px-4 py-8 text-center text-sm text-muted-foreground">Nothing found — try a different search?</p>
             )}
           </div>
         </div>

@@ -86,7 +86,7 @@ export default function GroceryList({
         disabled={isPending}
         className="w-full py-3 text-sm text-muted-foreground hover:text-foreground transition-colors disabled:opacity-40"
       >
-        Uncheck all
+        Start fresh
       </button>
     </div>
   )

@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation"
 import Image from "next/image"
 import Link from "next/link"
-import { ChevronLeft, Clock, Users, AlertTriangle, ChefHat } from "lucide-react"
+import { ChevronLeft, Clock, Users, AlertTriangle, ChefHat, Pencil } from "lucide-react"
 import { db } from "@/lib/db"
 import { recipes, userRecipeFavorites, userRecipeRatings } from "@/lib/db/schema"
 import { eq, and } from "drizzle-orm"
@@ -9,6 +9,7 @@ import { auth } from "@/lib/auth"
 import { formatTime } from "@/lib/utils"
 import FavoriteButton from "@/components/favorite-button"
 import StarRating from "@/components/star-rating"
+import NutritionPanel from "@/components/nutrition-panel"
 
 export default async function RecipePage({
   params,
@@ -57,6 +58,13 @@ export default async function RecipePage({
           Recipes
         </Link>
         <div className="flex items-center gap-2">
+          <Link
+            href={`/recipes/${recipe.slug}/edit`}
+            className="flex items-center gap-1.5 text-sm font-medium px-3 h-8 border border-border rounded hover:bg-muted transition-colors"
+          >
+            <Pencil size={14} />
+            Edit
+          </Link>
           <Link
             href={`/recipes/${recipe.slug}/cook`}
             className="flex items-center gap-1.5 text-sm font-medium px-3 h-8 bg-foreground text-background rounded hover:opacity-80 transition-opacity"
@@ -120,12 +128,19 @@ export default async function RecipePage({
           </div>
         </div>
 
+        {/* Nutrition */}
+        <NutritionPanel
+          recipeId={recipe.id}
+          slug={recipe.slug}
+          initialNutrition={recipe.nutritionPerServing}
+        />
+
         {/* FODMAP flags */}
         {unfixedFlags.length > 0 && (
           <div className="border border-border rounded-lg p-3 space-y-2">
             <div className="flex items-center gap-2 text-sm font-medium">
               <AlertTriangle size={14} />
-              FODMAP / Carb flags
+              Heads up — FODMAP flags
             </div>
             {unfixedFlags.map((flag, i) => (
               <div key={i} className="text-xs text-muted-foreground leading-relaxed">
@@ -198,7 +213,7 @@ export default async function RecipePage({
               rel="noopener noreferrer"
               className="text-xs text-muted-foreground hover:text-foreground underline underline-offset-2"
             >
-              Original recipe →
+              See original recipe →
             </a>
           </div>
         )}

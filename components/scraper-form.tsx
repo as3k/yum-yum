@@ -120,7 +120,7 @@ export default function ScraperForm() {
           className="w-full h-11 bg-foreground text-background text-sm font-medium rounded hover:opacity-80 transition-opacity disabled:opacity-40 flex items-center justify-center gap-2"
         >
           {loading && <Loader2 size={16} className="animate-spin" />}
-          {loading ? "Importing…" : "Import Recipe"}
+          {loading ? "Grabbing it…" : "Import Recipe"}
         </button>
       </form>
     )
@@ -159,7 +159,7 @@ export default function ScraperForm() {
 
       {/* Meal type selector */}
       <div className="space-y-1.5">
-        <label className="text-sm font-medium">Meal type</label>
+        <label className="text-sm font-medium">What kind of meal is this?</label>
         <div className="flex gap-2">
           {(["breakfast", "lunch", "dinner", "snack"] as const).map((type) => (
             <button
@@ -187,7 +187,7 @@ export default function ScraperForm() {
       )}
 
       {activeViolations.length === 0 && violations.length > 0 && (
-        <p className="text-sm text-muted-foreground text-center">All issues addressed ✓</p>
+        <p className="text-sm text-muted-foreground text-center">All clear! Looking good.</p>
       )}
 
       {/* Actions */}

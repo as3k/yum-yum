@@ -44,16 +44,16 @@ export default async function RecipesPage({
         <h1 className="text-xl font-semibold tracking-tight">Recipes</h1>
         <a
           href="/recipes/add"
-          className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+          className="flex items-center gap-1.5 text-sm font-medium px-3 h-8 bg-foreground text-background rounded hover:opacity-80 transition-opacity"
         >
-          + Add
+          + Add recipe
         </a>
       </div>
 
       <RecipeFilters active={meal} />
 
       {filtered.length === 0 ? (
-        <p className="text-muted-foreground text-sm text-center mt-10">No recipes yet.</p>
+        <p className="text-muted-foreground text-sm text-center mt-10">No recipes yet — add your first one!</p>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">
           {filtered.map((recipe) => (

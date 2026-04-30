@@ -22,7 +22,7 @@ export default function LoginPage() {
     })
 
     if (result?.error) {
-      setError("Invalid email or password")
+      setError("Hmm, those don't match. Give it another go!")
       setLoading(false)
     } else {
       router.push("/plan")
@@ -34,8 +34,8 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center px-4 bg-background">
       <div className="w-full max-w-sm space-y-10">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-foreground">Meal Prep</h1>
-          <p className="text-muted-foreground mt-1 text-sm">Sign in to continue</p>
+          <h1 className="text-2xl font-semibold tracking-tight text-foreground">YumYum</h1>
+          <p className="text-muted-foreground mt-1 text-sm">Ready to eat well this week?</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -76,7 +76,7 @@ export default function LoginPage() {
             disabled={loading}
             className="w-full h-11 bg-foreground text-background text-sm font-medium rounded transition-opacity hover:opacity-80 disabled:opacity-40"
           >
-            {loading ? "Signing in…" : "Sign in"}
+            {loading ? "On my way…" : "Let's go"}
           </button>
         </form>
       </div>

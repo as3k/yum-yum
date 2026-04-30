@@ -80,7 +80,7 @@ export default function CookingSession({
         </div>
 
         <div className="flex-1 px-4 pt-4 pb-2">
-          <p className="text-xs text-muted-foreground mb-3">Tap to check off as you gather</p>
+          <p className="text-xs text-muted-foreground mb-3">Gather everything first, then we cook!</p>
           <div className="space-y-2">
             {ingredients.map((ing, i) => (
               <button
@@ -115,7 +115,7 @@ export default function CookingSession({
         <div className="sticky bottom-0 px-4 pt-3 pb-8 bg-background border-t border-border shrink-0">
           {remaining > 0 && (
             <p className="text-xs text-center text-muted-foreground mb-3">
-              {remaining} item{remaining !== 1 ? "s" : ""} remaining
+              {remaining} more to grab
             </p>
           )}
           <button
@@ -125,7 +125,7 @@ export default function CookingSession({
             }}
             className="w-full h-12 bg-foreground text-background text-sm font-medium rounded flex items-center justify-center gap-2 hover:opacity-80 transition-opacity"
           >
-            {checked.size === ingredients.length ? "Start Cooking" : "Skip to Instructions"}
+            {checked.size === ingredients.length ? "Ready! Let's cook" : "Skip ahead to steps"}
             <ChevronRight size={16} />
           </button>
         </div>
@@ -218,7 +218,7 @@ export default function CookingSession({
             className="flex-1 h-12 bg-foreground text-background rounded text-sm font-medium flex items-center justify-center gap-2 hover:opacity-80 transition-opacity"
           >
             <Check size={16} />
-            Done!
+            All done! Great work
           </button>
         ) : (
           <button
