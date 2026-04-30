@@ -4,17 +4,22 @@ import { db } from "@/lib/db"
 import { pushSubscriptions } from "@/lib/db/schema"
 import { eq } from "drizzle-orm"
 
-webpush.setVapidDetails(
-  `mailto:${process.env.VAPID_SUBJECT ?? "admin@example.com"}`,
-  process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!,
-  process.env.VAPID_PRIVATE_KEY!
-)
-
 export async function POST(req: NextRequest) {
   const secret = req.headers.get("x-push-secret")
   if (secret !== process.env.PUSH_SECRET) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
+
+  const pubKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY
+  const privKey = process.env.VAPID_PRIVATE_KEY
+  if (!pubKey || !privKey) {
+    return NextResponse.json({ error: "VAPID keys not configured" }, { status: 503 })
+  }
+  webpush.setVapidDetails(
+    `mailto:${process.env.VAPID_SUBJECT ?? "admin@example.com"}`,
+    pubKey,
+    privKey
+  )
 
   const { userId, title, body, url } = await req.json()
 

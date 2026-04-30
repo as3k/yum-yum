@@ -4,12 +4,6 @@ import { db } from "@/lib/db"
 import { userPreferences, pushSubscriptions } from "@/lib/db/schema"
 import { eq } from "drizzle-orm"
 
-webpush.setVapidDetails(
-  `mailto:${process.env.VAPID_SUBJECT ?? "admin@example.com"}`,
-  process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!,
-  process.env.VAPID_PRIVATE_KEY!
-)
-
 const MEAL_TIMES = ["breakfastTime", "lunchTime", "snackTime", "dinnerTime"] as const
 const MEAL_LABELS: Record<string, string> = {
   breakfastTime: "Breakfast",
@@ -28,6 +22,11 @@ export async function GET(req: NextRequest) {
   if (req.headers.get("authorization") !== `Bearer ${process.env.CRON_SECRET}`) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
+
+  const pubKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY
+  const privKey = process.env.VAPID_PRIVATE_KEY
+  if (!pubKey || !privKey) return NextResponse.json({ ok: true, sent: 0, reason: "vapid not configured" })
+  webpush.setVapidDetails(`mailto:${process.env.VAPID_SUBJECT ?? "admin@example.com"}`, pubKey, privKey)
 
   const now = new Date()
   const nowMinutes = now.getHours() * 60 + now.getMinutes()
