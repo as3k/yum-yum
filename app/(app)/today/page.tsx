@@ -9,7 +9,6 @@ import { cookies } from "next/headers"
 import { Calendar, ChevronRight } from "lucide-react"
 
 const MEAL_TYPES = ["breakfast", "lunch", "snack", "dinner"] as const
-const MEAL_LABELS: Record<string, string> = { breakfast: "B", lunch: "L", snack: "S", dinner: "D" }
 
 function timeOfDayGreeting(hour: number) {
   if (hour < 12) return "Good morning"
@@ -43,7 +42,13 @@ export default async function TodayPage() {
     String(monday.getMonth() + 1).padStart(2, "0"),
     String(monday.getDate()).padStart(2, "0"),
   ].join("-")
-  const currentWeekStart = currentPlan?.weekStart ?? thisWeekMonday
+  const rawWeekStart = currentPlan?.weekStart ?? thisWeekMonday
+  const normalizedMonday = getMondayOfWeek(new Date(rawWeekStart + "T00:00:00"))
+  const currentWeekStart = [
+    normalizedMonday.getFullYear(),
+    String(normalizedMonday.getMonth() + 1).padStart(2, "0"),
+    String(normalizedMonday.getDate()).padStart(2, "0"),
+  ].join("-")
   const nextWeekStart = getNextWeekStart(currentWeekStart)
 
   // Full date label
@@ -53,10 +58,10 @@ export default async function TodayPage() {
 
   if (!currentPlan) {
     return (
-      <div className="max-w-2xl mx-auto px-4 pt-8 pb-6 space-y-6">
+      <div className="max-w-2xl mx-auto px-4 pt-2 pb-6 space-y-6">
         <div>
           <p className="text-xs text-muted-foreground">{dayName}, {dateFull}</p>
-          <h1 className="text-2xl font-bold tracking-tight">{timeOfDayGreeting(nowHour)}, {firstName}</h1>
+          <h1 className="text-2xl font-bold tracking-tight">{timeOfDayGreeting(nowHour)}, {firstName} 🌱</h1>
         </div>
         <div className="bg-muted rounded-2xl p-6 text-center space-y-3">
           <Calendar size={28} className="mx-auto text-muted-foreground opacity-40" />
@@ -126,13 +131,8 @@ export default async function TodayPage() {
     return { date, calories }
   })
 
-  // Meal status pills for hero
   const slotMap = Object.fromEntries(todaySlots.map((s) => [s.mealType, s]))
   const plannedCount = MEAL_TYPES.filter((t) => slotMap[t]?.recipe).length
-
-  // Next unplanned meal or highlight
-  const nextMealType = MEAL_TYPES.find((t) => !slotMap[t]?.recipe)
-  const firstPlanned = MEAL_TYPES.find((t) => slotMap[t]?.recipe)
   const heroSubline = plannedCount === 4
     ? "All 4 meals planned today"
     : plannedCount === 0
@@ -140,34 +140,23 @@ export default async function TodayPage() {
     : `${plannedCount} of 4 meals planned`
 
   return (
-    <div className="max-w-2xl mx-auto px-4 pt-8 pb-6 space-y-6">
+    <div className="max-w-2xl mx-auto px-4 pt-2 pb-6 space-y-6">
       {/* Hero */}
       <div className="space-y-0.5">
         <p className="text-xs text-muted-foreground">{dayName}, {dateFull}</p>
-        <h1 className="text-2xl font-bold tracking-tight">{timeOfDayGreeting(nowHour)}, {firstName}</h1>
+        <h1 className="text-2xl font-bold tracking-tight">{timeOfDayGreeting(nowHour)}, {firstName} 🌱</h1>
         <p className="text-sm text-muted-foreground">{heroSubline}</p>
       </div>
 
-      {/* Meal status pills */}
-      <div className="flex gap-2">
-        {MEAL_TYPES.map((type) => {
-          const slot = slotMap[type]
-          const hasRecipe = !!slot?.recipe
-          return (
-            <div
-              key={type}
-              className={`flex-1 rounded-xl px-2 py-2.5 text-center transition-colors ${hasRecipe ? "bg-accent/10" : "bg-muted"}`}
-            >
-              <p className={`text-xs font-semibold ${hasRecipe ? "text-accent" : "text-muted-foreground"}`}>
-                {MEAL_LABELS[type]}
-              </p>
-              <p className={`text-[10px] mt-0.5 leading-tight ${hasRecipe ? "text-accent/80" : "text-muted-foreground/60"}`}>
-                {hasRecipe ? "✓" : "—"}
-              </p>
-            </div>
-          )
-        })}
-      </div>
+      <TodayDashboard
+        today={today}
+        weekStart={currentWeekStart}
+        slots={todaySlots}
+        snackIdeas={snackIdeas.map((r) => ({ id: r.id, title: r.title, slug: r.slug }))}
+        calorieTarget={prefs?.calorieTarget ?? null}
+        weekCalories={weekCalories}
+        swapRecipes={swapRecipes.map((r) => ({ id: r.id, title: r.title, mealType: r.mealType }))}
+      />
 
       {/* See this week link */}
       <Link
@@ -180,16 +169,6 @@ export default async function TodayPage() {
         </div>
         <ChevronRight size={15} className="text-muted-foreground shrink-0" />
       </Link>
-
-      <TodayDashboard
-        today={today}
-        weekStart={currentWeekStart}
-        slots={todaySlots}
-        snackIdeas={snackIdeas.map((r) => ({ id: r.id, title: r.title, slug: r.slug }))}
-        calorieTarget={prefs?.calorieTarget ?? null}
-        weekCalories={weekCalories}
-        swapRecipes={swapRecipes.map((r) => ({ id: r.id, title: r.title, mealType: r.mealType }))}
-      />
     </div>
   )
 }

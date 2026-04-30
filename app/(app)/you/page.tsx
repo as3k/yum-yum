@@ -10,8 +10,7 @@ export default async function YouPage() {
   const email = session.user.email ?? ""
 
   return (
-    <div className="max-w-2xl mx-auto px-4 pt-8 pb-6">
-      <h1 className="text-2xl font-bold tracking-tight mb-6">You</h1>
+    <div className="max-w-2xl mx-auto px-4 pt-2 pb-6">
       <YouPageClient firstName={firstName} email={email} />
     </div>
   )

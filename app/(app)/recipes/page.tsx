@@ -4,7 +4,6 @@ import { eq } from "drizzle-orm"
 import { auth } from "@/lib/auth"
 import RecipeCard from "@/components/recipe-card"
 import RecipeFilters from "@/components/recipe-filters"
-import HeaderControls from "@/components/header-controls"
 
 export default async function RecipesPage({
   searchParams,
@@ -40,20 +39,7 @@ export default async function RecipesPage({
       : allRecipes
 
   return (
-    <div className="max-w-2xl mx-auto px-4 pt-8 pb-6">
-      <div className="flex items-center justify-between mb-5">
-        <h1 className="text-xl font-semibold tracking-tight">Recipes</h1>
-        <div className="flex items-center gap-2">
-          <a
-            href="/recipes/add"
-            className="flex items-center gap-1.5 text-sm font-medium px-3 h-8 bg-accent text-white rounded hover:opacity-80 transition-opacity"
-          >
-            + Add recipe
-          </a>
-          <HeaderControls />
-        </div>
-      </div>
-
+    <div className="max-w-2xl mx-auto px-4 pt-2 pb-6">
       <RecipeFilters active={meal} />
 
       {filtered.length === 0 ? (

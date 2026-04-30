@@ -31,7 +31,13 @@ export default async function PlanPage({
     String(monday.getDate()).padStart(2, "0"),
   ].join("-")
 
-  const currentWeekStart = currentPlan?.weekStart ?? thisWeekMonday
+  const rawWeekStart = currentPlan?.weekStart ?? thisWeekMonday
+  const normalizedMonday = getMondayOfWeek(new Date(rawWeekStart + "T00:00:00"))
+  const currentWeekStart = [
+    normalizedMonday.getFullYear(),
+    String(normalizedMonday.getMonth() + 1).padStart(2, "0"),
+    String(normalizedMonday.getDate()).padStart(2, "0"),
+  ].join("-")
   const nextWeekStart = getNextWeekStart(currentWeekStart)
 
   const isEditing =
@@ -87,12 +93,9 @@ export default async function PlanPage({
     }))
 
     return (
-      <div className="max-w-2xl mx-auto px-4 pt-8 pb-6">
+      <div className="max-w-2xl mx-auto px-4 pt-2 pb-6">
         <div className="mb-5">
-          <h1 className="text-2xl font-bold tracking-tight">
-            {weekParam === currentWeekStart ? "This week" : "Next week"}
-          </h1>
-          <p className="text-sm text-muted-foreground mt-0.5">{formatWeekRange(weekParam)}</p>
+          <p className="text-sm text-muted-foreground">{formatWeekRange(weekParam)}</p>
         </div>
         <PlanHeader currentWeekStart={currentWeekStart} nextWeekStart={nextWeekStart} activeWeek={weekParam} noCurrentPlan={!currentPlan} />
         <PlanEditor weekStart={weekParam} initialDays={initialDays} allRecipes={recipeOptions} />
@@ -103,8 +106,7 @@ export default async function PlanPage({
   // ── Empty state ────────────────────────────────────────────────────────────
   if (!currentPlan) {
     return (
-      <div className="max-w-2xl mx-auto px-4 pt-8 pb-6">
-        <h1 className="text-2xl font-bold tracking-tight mb-5">Your week</h1>
+      <div className="max-w-2xl mx-auto px-4 pt-2 pb-6">
         <PlanHeader currentWeekStart={currentWeekStart} nextWeekStart={nextWeekStart} activeWeek={currentWeekStart} noCurrentPlan={true} />
         <div className="pt-16 text-center space-y-3">
           <Calendar size={32} className="mx-auto text-muted-foreground opacity-40" />
@@ -142,7 +144,7 @@ export default async function PlanPage({
     .leftJoin(recipes, eq(mealPlanSlots.recipeId, recipes.id))
     .where(eq(mealPlanSlots.mealPlanId, currentPlan.id))
 
-  const dates = [...new Set(slots.map((s) => s.dayDate))].sort()
+  const dates = getWeekDates(currentWeekStart)
   const days = dates.map((date) => ({
     date,
     breakfast: slots.find((s) => s.dayDate === date && s.mealType === "breakfast") as (typeof slots)[0] | undefined,
@@ -152,10 +154,9 @@ export default async function PlanPage({
   }))
 
   return (
-    <div className="max-w-2xl mx-auto px-4 pt-8 pb-6">
+    <div className="max-w-2xl mx-auto px-4 pt-2 pb-6">
       <div className="mb-5">
-        <h1 className="text-2xl font-bold tracking-tight">Your week</h1>
-        <p className="text-sm text-muted-foreground mt-0.5">{formatWeekRange(currentWeekStart)}</p>
+        <p className="text-sm text-muted-foreground">{formatWeekRange(currentWeekStart)}</p>
       </div>
       <PlanHeader currentWeekStart={currentWeekStart} nextWeekStart={nextWeekStart} activeWeek={currentWeekStart} noCurrentPlan={false} />
       <WeekGrid days={days} today={today} />
