@@ -166,7 +166,7 @@ export default async function PlanPage({
   // ── Current week read-only view ────────────────────────────────────────────
   const userId = session?.user?.id
 
-  const [slots, prefs, snackIdeas] = await Promise.all([
+  const [slots, prefs, snackIdeas, swapRecipes] = await Promise.all([
     db
       .select({
         id: mealPlanSlots.id,
@@ -180,6 +180,8 @@ export default async function PlanPage({
           totalTimeMin: recipes.totalTimeMin,
           nutritionPerServing: recipes.nutritionPerServing,
           fodmapFlags: recipes.fodmapFlags,
+          storageNotes: recipes.storageNotes,
+          maxStorageDays: recipes.maxStorageDays,
         },
       })
       .from(mealPlanSlots)
@@ -193,10 +195,14 @@ export default async function PlanPage({
       orderBy: (r, { asc }) => [asc(r.title)],
       limit: 6,
     }),
+    db.query.recipes.findMany({
+      columns: { id: true, title: true, mealType: true },
+      orderBy: (r, { asc }) => [asc(r.title)],
+    }),
   ])
 
   const todaySlots = slots
-    .filter((s) => s.dayDate === today && s.recipe?.id)
+    .filter((s) => s.dayDate === today)
     .map((s) => ({
       id: s.id,
       mealType: s.mealType,
@@ -206,8 +212,23 @@ export default async function PlanPage({
         slug: s.recipe.slug ?? "",
         nutritionPerServing: s.recipe.nutritionPerServing as import("@/lib/db/schema").NutritionData | null,
         fodmapFlags: (s.recipe.fodmapFlags ?? []) as import("@/lib/db/schema").FodmapFlag[],
+        storageNotes: s.recipe.storageNotes ?? null,
+        maxStorageDays: s.recipe.maxStorageDays ?? null,
       } : null,
     }))
+
+  // Per-day calorie totals for weekly bars
+  const weekCalories = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(currentWeekStart + "T00:00:00")
+    d.setDate(d.getDate() + i)
+    const date = [d.getFullYear(), String(d.getMonth() + 1).padStart(2, "0"), String(d.getDate()).padStart(2, "0")].join("-")
+    const daySlots = slots.filter((s) => s.dayDate === date && s.recipe?.nutritionPerServing)
+    const calories = daySlots.reduce((sum, s) => {
+      const n = s.recipe?.nutritionPerServing as import("@/lib/db/schema").NutritionData | null
+      return sum + (n?.calories ?? 0)
+    }, 0)
+    return { date, calories }
+  })
 
   const dates = [...new Set(slots.map((s) => s.dayDate))].sort()
   const days = dates.map((date) => ({
@@ -227,21 +248,23 @@ export default async function PlanPage({
         </div>
         <HeaderControls />
       </div>
-      <PlanHeader
-        currentWeekStart={currentWeekStart}
-        nextWeekStart={nextWeekStart}
-        activeWeek={currentWeekStart}
-        noCurrentPlan={false}
-      />
       <div className="space-y-6">
         <TodayDashboard
           today={today}
+          weekStart={currentWeekStart}
           slots={todaySlots}
           snackIdeas={snackIdeas.map((r) => ({ id: r.id, title: r.title, slug: r.slug }))}
           calorieTarget={prefs?.calorieTarget ?? null}
+          weekCalories={weekCalories}
+          swapRecipes={swapRecipes.map((r) => ({ id: r.id, title: r.title, mealType: r.mealType }))}
         />
         <div>
-          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-3">Full week · {formatWeekRange(currentPlan.weekStart)}</p>
+          <PlanHeader
+            currentWeekStart={currentWeekStart}
+            nextWeekStart={nextWeekStart}
+            activeWeek={currentWeekStart}
+            noCurrentPlan={false}
+          />
           <WeekGrid days={days} today={today} />
         </div>
       </div>

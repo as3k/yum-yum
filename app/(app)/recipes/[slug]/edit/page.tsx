@@ -42,6 +42,7 @@ export default async function EditRecipePage({
           totalTimeMin: recipe.totalTimeMin ?? null,
           servings: recipe.servings ?? null,
           storageNotes: recipe.storageNotes ?? null,
+          maxStorageDays: recipe.maxStorageDays ?? null,
           notes: recipe.notes ?? null,
           ingredients: recipe.ingredients ?? [],
           instructions: recipe.instructions ?? [],

@@ -21,6 +21,7 @@ type RecipeData = {
   totalTimeMin: number | null
   servings: number | null
   storageNotes: string | null
+  maxStorageDays: number | null
   notes: string | null
   ingredients: Ingredient[]
   instructions: Instruction[]
@@ -40,6 +41,7 @@ export default function EditRecipeForm({ recipe }: { recipe: RecipeData }) {
   const [totalTimeMin, setTotalTimeMin] = useState(recipe.totalTimeMin?.toString() ?? "")
   const [servings, setServings] = useState(recipe.servings?.toString() ?? "")
   const [storageNotes, setStorageNotes] = useState(recipe.storageNotes ?? "")
+  const [maxStorageDays, setMaxStorageDays] = useState(recipe.maxStorageDays?.toString() ?? "")
   const [notes, setNotes] = useState(recipe.notes ?? "")
   const [ingredients, setIngredients] = useState<Ingredient[]>(
     recipe.ingredients.length > 0 ? recipe.ingredients : [{ name: "" }]
@@ -87,6 +89,7 @@ export default function EditRecipeForm({ recipe }: { recipe: RecipeData }) {
           totalTimeMin: totalTimeMin ? parseInt(totalTimeMin) : undefined,
           servings: servings ? parseInt(servings) : undefined,
           storageNotes: storageNotes.trim() || undefined,
+          maxStorageDays: maxStorageDays ? parseInt(maxStorageDays) : undefined,
           notes: notes.trim() || undefined,
           ingredients: ingredients.filter((i) => i.name.trim()),
           instructions: instructions.filter((i) => i.text.trim()),
@@ -279,6 +282,19 @@ export default function EditRecipeForm({ recipe }: { recipe: RecipeData }) {
           placeholder="How to store leftovers…"
           className="w-full px-3 py-2.5 bg-muted border border-border rounded text-sm focus:outline-none focus:ring-1 focus:ring-foreground resize-none"
         />
+        <div className="flex items-center gap-2 pt-1">
+          <label className="text-xs text-muted-foreground shrink-0">Keeps for</label>
+          <input
+            type="number"
+            min={1}
+            max={30}
+            value={maxStorageDays}
+            onChange={(e) => setMaxStorageDays(e.target.value)}
+            placeholder="—"
+            className="w-16 text-center px-2 h-7 bg-muted border border-border rounded text-sm focus:outline-none focus:ring-1 focus:ring-foreground"
+          />
+          <span className="text-xs text-muted-foreground">days in fridge</span>
+        </div>
       </div>
 
       {/* Notes */}

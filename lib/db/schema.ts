@@ -68,6 +68,7 @@ export const recipes = pgTable("recipes", {
   ingredients: jsonb("ingredients").$type<Ingredient[]>().default([]),
   instructions: jsonb("instructions").$type<Instruction[]>().default([]),
   storageNotes: text("storage_notes"),
+  maxStorageDays: integer("max_storage_days"),
   notes: text("notes"),
   fodmapFlags: jsonb("fodmap_flags").$type<FodmapFlag[]>().default([]),
   nutritionPerServing: jsonb("nutrition_per_serving").$type<NutritionData>(),

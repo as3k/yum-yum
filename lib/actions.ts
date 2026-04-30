@@ -167,6 +167,7 @@ export async function updateRecipe(
     totalTimeMin?: number
     servings?: number
     storageNotes?: string
+    maxStorageDays?: number
     notes?: string
     ingredients: Ingredient[]
     instructions: Instruction[]
@@ -193,6 +194,7 @@ export async function updateRecipe(
     totalTimeMin: data.totalTimeMin ?? null,
     servings: data.servings ?? null,
     storageNotes: data.storageNotes ?? null,
+    maxStorageDays: data.maxStorageDays ?? null,
     notes: data.notes ?? null,
     updatedAt: new Date(),
   }).where(eq(recipes.id, id))
@@ -668,6 +670,18 @@ export async function unsubscribeFromPush(endpoint: string) {
         eq(pushSubscriptions.endpoint, endpoint)
       )
     )
+}
+
+export async function swapMealSlot(slotId: number, newRecipeId: number) {
+  const session = await auth()
+  if (!session?.user?.id) throw new Error("Unauthorized")
+
+  await db
+    .update(mealPlanSlots)
+    .set({ recipeId: newRecipeId })
+    .where(eq(mealPlanSlots.id, slotId))
+
+  revalidatePath("/plan")
 }
 
 export async function saveUserPreferences(prefs: {
