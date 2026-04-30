@@ -4,6 +4,8 @@ import { eq } from "drizzle-orm"
 import { auth } from "@/lib/auth"
 import RecipeCard from "@/components/recipe-card"
 import RecipeFilters from "@/components/recipe-filters"
+import Link from "next/link"
+import { ChevronLeft } from "lucide-react"
 
 export default async function RecipesPage({
   searchParams,
@@ -39,7 +41,18 @@ export default async function RecipesPage({
       : allRecipes
 
   return (
-    <div className="max-w-2xl mx-auto px-4 pt-2 pb-6">
+    <div className="max-w-2xl mx-auto px-4 pt-8 pb-6">
+      <div className="flex items-center justify-between mb-5">
+        <div className="flex items-center gap-2">
+          <Link href="/today" className="text-muted-foreground hover:text-foreground transition-colors -ml-3 p-2">
+            <ChevronLeft size={20} />
+          </Link>
+          <h1 className="text-xl font-semibold tracking-tight">Recipes</h1>
+        </div>
+        <a href="/recipes/add" className="flex items-center gap-1.5 text-sm font-medium px-3 h-8 bg-accent text-white rounded hover:opacity-80 transition-opacity">
+          + Add recipe
+        </a>
+      </div>
       <RecipeFilters active={meal} />
 
       {filtered.length === 0 ? (

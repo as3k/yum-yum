@@ -7,7 +7,7 @@ import PlanEditor, { type EditableDay, type RecipeOption } from "@/components/pl
 import { formatWeekRange, getNextWeekStart, getWeekDates, todayStr, getMondayOfWeek } from "@/lib/utils"
 import { auth } from "@/lib/auth"
 import { cookies } from "next/headers"
-import { Calendar } from "lucide-react"
+import { Calendar, ChevronLeft } from "lucide-react"
 
 export default async function PlanPage({
   searchParams,
@@ -93,9 +93,15 @@ export default async function PlanPage({
     }))
 
     return (
-      <div className="max-w-2xl mx-auto px-4 pt-2 pb-6">
+      <div className="max-w-2xl mx-auto px-4 pt-8 pb-6">
         <div className="mb-5">
-          <p className="text-sm text-muted-foreground">{formatWeekRange(weekParam)}</p>
+          <div className="flex items-center gap-2">
+            <Link href="/today" className="text-muted-foreground hover:text-foreground transition-colors -ml-3 p-2">
+              <ChevronLeft size={20} />
+            </Link>
+            <h1 className="text-2xl font-bold tracking-tight">{weekParam === currentWeekStart ? "This week" : "Next week"}</h1>
+          </div>
+          <p className="text-sm text-muted-foreground mt-0.5 ml-6">{formatWeekRange(weekParam)}</p>
         </div>
         <PlanHeader currentWeekStart={currentWeekStart} nextWeekStart={nextWeekStart} activeWeek={weekParam} noCurrentPlan={!currentPlan} />
         <PlanEditor weekStart={weekParam} initialDays={initialDays} allRecipes={recipeOptions} />
@@ -106,7 +112,13 @@ export default async function PlanPage({
   // ── Empty state ────────────────────────────────────────────────────────────
   if (!currentPlan) {
     return (
-      <div className="max-w-2xl mx-auto px-4 pt-2 pb-6">
+      <div className="max-w-2xl mx-auto px-4 pt-8 pb-6">
+        <div className="flex items-center gap-2 mb-5">
+          <Link href="/today" className="text-muted-foreground hover:text-foreground transition-colors -ml-3 p-2">
+            <ChevronLeft size={20} />
+          </Link>
+          <h1 className="text-2xl font-bold tracking-tight">Your week</h1>
+        </div>
         <PlanHeader currentWeekStart={currentWeekStart} nextWeekStart={nextWeekStart} activeWeek={currentWeekStart} noCurrentPlan={true} />
         <div className="pt-16 text-center space-y-3">
           <Calendar size={32} className="mx-auto text-muted-foreground opacity-40" />
@@ -154,9 +166,15 @@ export default async function PlanPage({
   }))
 
   return (
-    <div className="max-w-2xl mx-auto px-4 pt-2 pb-6">
+    <div className="max-w-2xl mx-auto px-4 pt-8 pb-6">
       <div className="mb-5">
-        <p className="text-sm text-muted-foreground">{formatWeekRange(currentWeekStart)}</p>
+        <div className="flex items-center gap-2">
+          <Link href="/today" className="text-muted-foreground hover:text-foreground transition-colors -ml-3 p-2">
+            <ChevronLeft size={20} />
+          </Link>
+          <h1 className="text-2xl font-bold tracking-tight">Your week</h1>
+        </div>
+        <p className="text-sm text-muted-foreground mt-0.5 ml-6">{formatWeekRange(currentWeekStart)}</p>
       </div>
       <PlanHeader currentWeekStart={currentWeekStart} nextWeekStart={nextWeekStart} activeWeek={currentWeekStart} noCurrentPlan={false} />
       <WeekGrid days={days} today={today} />

@@ -3,6 +3,8 @@ import { groceryLists, groceryItems } from "@/lib/db/schema"
 import { desc, eq } from "drizzle-orm"
 import { formatWeekRange } from "@/lib/utils"
 import GroceryList from "@/components/grocery-list"
+import Link from "next/link"
+import { ChevronLeft } from "lucide-react"
 
 export default async function GroceryPage() {
   const list = await db.query.groceryLists.findFirst({
@@ -33,10 +35,16 @@ export default async function GroceryPage() {
   const checkedCount = items.filter((i) => i.checked).length
 
   return (
-    <div className="max-w-2xl mx-auto px-4 pt-2 pb-6">
-      <p className="text-sm text-muted-foreground mb-5">
-        {formatWeekRange(list.weekStart)} · {checkedCount} of {totalCount} grabbed
-      </p>
+    <div className="max-w-2xl mx-auto px-4 pt-8 pb-6">
+      <div className="mb-5">
+        <div className="flex items-center gap-2">
+          <Link href="/today" className="text-muted-foreground hover:text-foreground transition-colors -ml-3 p-2">
+            <ChevronLeft size={20} />
+          </Link>
+          <h1 className="text-xl font-semibold tracking-tight">Shopping List</h1>
+        </div>
+        <p className="text-sm text-muted-foreground mt-0.5 ml-6">{formatWeekRange(list.weekStart)} · {checkedCount} of {totalCount} grabbed</p>
+      </div>
       <GroceryList grouped={grouped} listId={list.id} />
     </div>
   )

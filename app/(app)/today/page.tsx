@@ -58,7 +58,7 @@ export default async function TodayPage() {
 
   if (!currentPlan) {
     return (
-      <div className="max-w-2xl mx-auto px-4 pt-2 pb-6 space-y-6">
+      <div className="max-w-2xl mx-auto px-4 pt-8 pb-6 space-y-6">
         <div>
           <p className="text-xs text-muted-foreground">{dayName}, {dateFull}</p>
           <h1 className="text-2xl font-bold tracking-tight">{timeOfDayGreeting(nowHour)}, {firstName} 🌱</h1>
@@ -140,7 +140,7 @@ export default async function TodayPage() {
     : `${plannedCount} of 4 meals planned`
 
   return (
-    <div className="max-w-2xl mx-auto px-4 pt-2 pb-6 space-y-6">
+    <div className="max-w-2xl mx-auto px-4 pt-8 pb-6 space-y-6">
       {/* Hero */}
       <div className="space-y-0.5">
         <p className="text-xs text-muted-foreground">{dayName}, {dateFull}</p>
