@@ -684,6 +684,15 @@ export async function swapMealSlot(slotId: number, newRecipeId: number) {
   revalidatePath("/plan")
 }
 
+export async function suggestFromFridge(ingredients: string[]): Promise<DiscoveryResult[]> {
+  const session = await auth()
+  if (!session?.user?.id) throw new Error("Unauthorized")
+
+  return discoverRecipes(
+    `I have these ingredients in my fridge: ${ingredients.join(", ")}. Suggest 3-4 practical recipes I can make with what I have. Prioritize using as many of these ingredients as possible.`
+  )
+}
+
 export async function saveUserPreferences(prefs: {
   calorieTarget?: number | null
   breakfastTime?: string

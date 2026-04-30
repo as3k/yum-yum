@@ -2,6 +2,7 @@ import Link from "next/link"
 import { AlertTriangle, Sparkles } from "lucide-react"
 import type { NutritionData, FodmapFlag } from "@/lib/db/schema"
 import SwapSlotPicker from "./swap-slot-picker"
+import AddSlotPicker from "./add-slot-picker"
 
 interface MealSlot {
   id: number
@@ -146,12 +147,12 @@ export default function TodayDashboard({
                     )}
                   </>
                 ) : (
-                  <Link
-                    href="/plan"
-                    className="text-sm text-muted-foreground hover:text-accent transition-colors"
-                  >
-                    — add to plan
-                  </Link>
+                  <AddSlotPicker
+                    weekStart={weekStart}
+                    today={today}
+                    mealType={type}
+                    recipes={swapRecipes}
+                  />
                 )}
               </div>
               {recipe && slot && (
