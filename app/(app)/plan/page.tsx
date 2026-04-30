@@ -9,6 +9,7 @@ import { formatWeekRange, getNextWeekStart, getWeekDates, todayStr, getMondayOfW
 import { auth } from "@/lib/auth"
 import { cookies } from "next/headers"
 import { Calendar } from "lucide-react"
+import HeaderControls from "@/components/header-controls"
 
 export default async function PlanPage({
   searchParams,
@@ -104,11 +105,14 @@ export default async function PlanPage({
 
     return (
       <div className="max-w-2xl mx-auto px-4 pt-8 pb-6">
-        <div className="mb-5">
-          <p className="text-xs text-muted-foreground">Hey {firstName} 🌱</p>
-          <h1 className="text-2xl font-bold tracking-tight leading-tight">
-            {isThisWeek ? "Here's your week" : "Plan next week"}
-          </h1>
+        <div className="flex items-start justify-between mb-5">
+          <div>
+            <p className="text-xs text-muted-foreground">Hey {firstName} 🌱</p>
+            <h1 className="text-2xl font-bold tracking-tight leading-tight">
+              {isThisWeek ? "Here's your week" : "Plan next week"}
+            </h1>
+          </div>
+          <HeaderControls />
         </div>
         <PlanHeader
           currentWeekStart={currentWeekStart}
@@ -132,9 +136,12 @@ export default async function PlanPage({
   if (!currentPlan) {
     return (
       <div className="max-w-2xl mx-auto px-4 pt-8 pb-6">
-        <div className="mb-5">
-          <p className="text-xs text-muted-foreground">Hey {firstName} 🌱</p>
-          <h1 className="text-2xl font-bold tracking-tight">Let's get cooking</h1>
+        <div className="flex items-start justify-between mb-5">
+          <div>
+            <p className="text-xs text-muted-foreground">Hey {firstName} 🌱</p>
+            <h1 className="text-2xl font-bold tracking-tight">Let's get cooking</h1>
+          </div>
+          <HeaderControls />
         </div>
         <PlanHeader
           currentWeekStart={currentWeekStart}
@@ -213,9 +220,12 @@ export default async function PlanPage({
 
   return (
     <div className="max-w-2xl mx-auto px-4 pt-8 pb-6">
-      <div className="mb-5">
-        <p className="text-xs text-muted-foreground">Hey {firstName} 🌱</p>
-        <h1 className="text-2xl font-bold tracking-tight leading-tight">Here's your week</h1>
+      <div className="flex items-start justify-between mb-5">
+        <div>
+          <p className="text-xs text-muted-foreground">Hey {firstName} 🌱</p>
+          <h1 className="text-2xl font-bold tracking-tight leading-tight">Here's your week</h1>
+        </div>
+        <HeaderControls />
       </div>
       <PlanHeader
         currentWeekStart={currentWeekStart}

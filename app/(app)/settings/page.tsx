@@ -4,6 +4,7 @@ import { eq } from "drizzle-orm"
 import { auth } from "@/lib/auth"
 import { redirect } from "next/navigation"
 import SettingsForm from "@/components/settings-form"
+import HeaderControls from "@/components/header-controls"
 
 export default async function SettingsPage() {
   const session = await auth()
@@ -15,7 +16,10 @@ export default async function SettingsPage() {
 
   return (
     <div className="max-w-2xl mx-auto px-4 pt-8 pb-6">
-      <h1 className="text-xl font-semibold tracking-tight mb-6">Settings</h1>
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-xl font-semibold tracking-tight">Settings</h1>
+        <HeaderControls />
+      </div>
       <SettingsForm
         initialValues={{
           calorieTarget: prefs?.calorieTarget ?? null,

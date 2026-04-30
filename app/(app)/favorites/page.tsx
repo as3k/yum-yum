@@ -3,6 +3,7 @@ import { recipes, userRecipeFavorites, userRecipeRatings } from "@/lib/db/schema
 import { eq, inArray } from "drizzle-orm"
 import { auth } from "@/lib/auth"
 import RecipeCard from "@/components/recipe-card"
+import HeaderControls from "@/components/header-controls"
 
 export default async function FavoritesPage() {
   const session = await auth()
@@ -48,7 +49,10 @@ export default async function FavoritesPage() {
 
   return (
     <div className="max-w-2xl mx-auto px-4 pt-8 pb-6">
-      <h1 className="text-xl font-semibold tracking-tight mb-5">Favorites</h1>
+      <div className="flex items-center justify-between mb-5">
+        <h1 className="text-xl font-semibold tracking-tight">Favorites</h1>
+        <HeaderControls />
+      </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {orderedRecipes.map((recipe) => (
           <RecipeCard

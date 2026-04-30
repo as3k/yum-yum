@@ -3,6 +3,7 @@ import { groceryLists, groceryItems } from "@/lib/db/schema"
 import { desc, eq } from "drizzle-orm"
 import { formatWeekRange } from "@/lib/utils"
 import GroceryList from "@/components/grocery-list"
+import HeaderControls from "@/components/header-controls"
 
 export default async function GroceryPage() {
   const list = await db.query.groceryLists.findFirst({
@@ -41,6 +42,7 @@ export default async function GroceryPage() {
             {formatWeekRange(list.weekStart)} · {checkedCount} of {totalCount} grabbed
           </p>
         </div>
+        <HeaderControls />
       </div>
       <GroceryList grouped={grouped} listId={list.id} />
     </div>

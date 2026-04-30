@@ -4,6 +4,7 @@ import { eq } from "drizzle-orm"
 import Link from "next/link"
 import { Plus, UtensilsCrossed } from "lucide-react"
 import type { NutritionData } from "@/lib/db/schema"
+import HeaderControls from "@/components/header-controls"
 
 export default async function MealsPage() {
   const allMeals = await db.query.meals.findMany({
@@ -45,13 +46,16 @@ export default async function MealsPage() {
     <div className="max-w-2xl mx-auto px-4 pt-8 pb-6">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-xl font-semibold tracking-tight">Meals</h1>
-        <Link
-          href="/meals/new"
-          className="flex items-center gap-1.5 text-sm font-medium px-3 h-8 bg-accent text-white rounded hover:opacity-80 transition-opacity"
-        >
-          <Plus size={14} />
-          New meal
-        </Link>
+        <div className="flex items-center gap-2">
+          <Link
+            href="/meals/new"
+            className="flex items-center gap-1.5 text-sm font-medium px-3 h-8 bg-accent text-white rounded hover:opacity-80 transition-opacity"
+          >
+            <Plus size={14} />
+            New meal
+          </Link>
+          <HeaderControls />
+        </div>
       </div>
 
       {mealData.length === 0 ? (
