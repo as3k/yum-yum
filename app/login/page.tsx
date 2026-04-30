@@ -25,7 +25,7 @@ export default function LoginPage() {
       setError("Hmm, those don't match. Give it another go!")
       setLoading(false)
     } else {
-      router.push("/plan")
+      router.push("/today")
       router.refresh()
     }
   }
