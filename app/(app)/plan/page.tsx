@@ -1,9 +1,10 @@
 import { db } from "@/lib/db"
-import { mealPlans, mealPlanSlots, recipes, userRecipeFavorites } from "@/lib/db/schema"
-import { desc, eq, lte } from "drizzle-orm"
+import { mealPlans, mealPlanSlots, recipes, userRecipeFavorites, userPreferences } from "@/lib/db/schema"
+import { desc, eq, lte, and } from "drizzle-orm"
 import Link from "next/link"
 import WeekGrid from "@/components/week-grid"
 import PlanEditor, { type EditableDay, type RecipeOption } from "@/components/plan-editor"
+import TodayDashboard from "@/components/today-dashboard"
 import { formatWeekRange, getNextWeekStart, getWeekDates, todayStr, getMondayOfWeek } from "@/lib/utils"
 import { auth } from "@/lib/auth"
 import { cookies } from "next/headers"
@@ -156,22 +157,50 @@ export default async function PlanPage({
   }
 
   // ── Current week read-only view ────────────────────────────────────────────
-  const slots = await db
-    .select({
-      id: mealPlanSlots.id,
-      dayDate: mealPlanSlots.dayDate,
-      mealType: mealPlanSlots.mealType,
-      notes: mealPlanSlots.notes,
-      recipe: {
-        id: recipes.id,
-        title: recipes.title,
-        slug: recipes.slug,
-        totalTimeMin: recipes.totalTimeMin,
-      },
-    })
-    .from(mealPlanSlots)
-    .leftJoin(recipes, eq(mealPlanSlots.recipeId, recipes.id))
-    .where(eq(mealPlanSlots.mealPlanId, currentPlan.id))
+  const userId = session?.user?.id
+
+  const [slots, prefs, snackIdeas] = await Promise.all([
+    db
+      .select({
+        id: mealPlanSlots.id,
+        dayDate: mealPlanSlots.dayDate,
+        mealType: mealPlanSlots.mealType,
+        notes: mealPlanSlots.notes,
+        recipe: {
+          id: recipes.id,
+          title: recipes.title,
+          slug: recipes.slug,
+          totalTimeMin: recipes.totalTimeMin,
+          nutritionPerServing: recipes.nutritionPerServing,
+          fodmapFlags: recipes.fodmapFlags,
+        },
+      })
+      .from(mealPlanSlots)
+      .leftJoin(recipes, eq(mealPlanSlots.recipeId, recipes.id))
+      .where(eq(mealPlanSlots.mealPlanId, currentPlan.id)),
+    userId
+      ? db.query.userPreferences.findFirst({ where: eq(userPreferences.userId, userId) })
+      : null,
+    db.query.recipes.findMany({
+      where: eq(recipes.mealType, "snack"),
+      orderBy: (r, { asc }) => [asc(r.title)],
+      limit: 6,
+    }),
+  ])
+
+  const todaySlots = slots
+    .filter((s) => s.dayDate === today && s.recipe?.id)
+    .map((s) => ({
+      id: s.id,
+      mealType: s.mealType,
+      recipe: s.recipe?.id ? {
+        id: s.recipe.id,
+        title: s.recipe.title ?? "",
+        slug: s.recipe.slug ?? "",
+        nutritionPerServing: s.recipe.nutritionPerServing as import("@/lib/db/schema").NutritionData | null,
+        fodmapFlags: (s.recipe.fodmapFlags ?? []) as import("@/lib/db/schema").FodmapFlag[],
+      } : null,
+    }))
 
   const dates = [...new Set(slots.map((s) => s.dayDate))].sort()
   const days = dates.map((date) => ({
@@ -187,7 +216,6 @@ export default async function PlanPage({
       <div className="mb-5">
         <p className="text-xs text-muted-foreground">Hey {firstName} 🌱</p>
         <h1 className="text-2xl font-bold tracking-tight leading-tight">Here's your week</h1>
-        <p className="text-sm text-muted-foreground mt-0.5">{formatWeekRange(currentPlan.weekStart)}</p>
       </div>
       <PlanHeader
         currentWeekStart={currentWeekStart}
@@ -195,7 +223,18 @@ export default async function PlanPage({
         activeWeek={currentWeekStart}
         noCurrentPlan={false}
       />
-      <WeekGrid days={days} today={today} />
+      <div className="space-y-6">
+        <TodayDashboard
+          today={today}
+          slots={todaySlots}
+          snackIdeas={snackIdeas.map((r) => ({ id: r.id, title: r.title, slug: r.slug }))}
+          calorieTarget={prefs?.calorieTarget ?? null}
+        />
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-3">Full week · {formatWeekRange(currentPlan.weekStart)}</p>
+          <WeekGrid days={days} today={today} />
+        </div>
+      </div>
     </div>
   )
 }

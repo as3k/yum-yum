@@ -15,6 +15,7 @@ import {
   userRecipeFavorites,
   userRecipeRatings,
   pushSubscriptions,
+  userPreferences,
   type FodmapFlag,
   type Ingredient,
   type Instruction,
@@ -667,4 +668,27 @@ export async function unsubscribeFromPush(endpoint: string) {
         eq(pushSubscriptions.endpoint, endpoint)
       )
     )
+}
+
+export async function saveUserPreferences(prefs: {
+  calorieTarget?: number | null
+  breakfastTime?: string
+  lunchTime?: string
+  snackTime?: string
+  dinnerTime?: string
+  reminderLeadMin?: number
+}) {
+  const session = await auth()
+  if (!session?.user?.id) throw new Error("Unauthorized")
+
+  await db
+    .insert(userPreferences)
+    .values({ userId: session.user.id, ...prefs })
+    .onConflictDoUpdate({
+      target: userPreferences.userId,
+      set: { ...prefs, updatedAt: new Date() },
+    })
+
+  revalidatePath("/settings")
+  revalidatePath("/plan")
 }

@@ -168,6 +168,19 @@ export const groceryItems = pgTable("grocery_items", {
   recipeIds: integer("recipe_ids").array().default([]),
 })
 
+export const userPreferences = pgTable("user_preferences", {
+  userId: uuid("user_id")
+    .primaryKey()
+    .references(() => users.id, { onDelete: "cascade" }),
+  calorieTarget: integer("calorie_target"),
+  breakfastTime: text("breakfast_time").default("08:00"),
+  lunchTime: text("lunch_time").default("12:30"),
+  snackTime: text("snack_time").default("15:00"),
+  dinnerTime: text("dinner_time").default("18:30"),
+  reminderLeadMin: integer("reminder_lead_min").default(30),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+})
+
 export const pushSubscriptions = pgTable(
   "push_subscriptions",
   {
