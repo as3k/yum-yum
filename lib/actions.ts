@@ -899,6 +899,14 @@ export async function saveFridgeScan(ingredients: string[]) {
   revalidatePath("/fridge")
 }
 
+export async function deleteFridgeScan(scanId: number) {
+  const session = await auth()
+  if (!session?.user?.id) throw new Error("Unauthorized")
+
+  await db.delete(fridgeScans).where(and(eq(fridgeScans.id, scanId), eq(fridgeScans.userId, session.user.id)))
+  revalidatePath("/fridge")
+}
+
 export async function saveUserPreferences(prefs: {
   calorieTarget?: number | null
   breakfastTime?: string

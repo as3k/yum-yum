@@ -1,10 +1,10 @@
 "use client"
 
 import { useRef, useState, KeyboardEvent } from "react"
-import { Camera, X, Loader2, Sparkles, ChevronRight, Plus, Search } from "lucide-react"
+import { Camera, X, Loader2, Sparkles, ChevronRight, Plus, Search, Trash2 } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
-import { suggestFromFridge, matchFridgeToRecipes, saveFridgeScan } from "@/lib/actions"
+import { suggestFromFridge, matchFridgeToRecipes, saveFridgeScan, deleteFridgeScan } from "@/lib/actions"
 import type { DiscoveryResult, FridgeMatch } from "@/lib/actions"
 import type { Ingredient } from "@/lib/db/schema"
 
@@ -36,6 +36,68 @@ interface MatchedRecipe extends FridgeMatch {
   slug: string
 }
 
+function SwipeToDeleteRow({ onDelete, children }: { onDelete: () => void; children: React.ReactNode }) {
+  const rowRef = useRef<HTMLDivElement>(null)
+  const zoneRef = useRef<HTMLDivElement>(null)
+  const startX = useRef(0)
+
+  function onTouchStart(e: React.TouchEvent) {
+    startX.current = e.touches[0].clientX
+    if (rowRef.current) rowRef.current.style.transition = "none"
+    if (zoneRef.current) zoneRef.current.style.transition = "none"
+  }
+
+  function onTouchMove(e: React.TouchEvent) {
+    const delta = Math.min(0, e.touches[0].clientX - startX.current)
+    if (rowRef.current) rowRef.current.style.transform = `translateX(${delta}px)`
+    if (zoneRef.current) zoneRef.current.style.width = `${Math.max(72, -delta)}px`
+  }
+
+  function onTouchEnd(e: React.TouchEvent) {
+    const delta = e.changedTouches[0].clientX - startX.current
+    if (!rowRef.current || !zoneRef.current) return
+    const rowWidth = rowRef.current.offsetWidth
+    rowRef.current.style.transition = "transform 0.25s ease"
+    zoneRef.current.style.transition = "width 0.25s ease"
+    if (delta < -(rowWidth * 0.55)) {
+      rowRef.current.style.transform = `translateX(-${rowWidth}px)`
+      zoneRef.current.style.width = `${rowWidth}px`
+      setTimeout(onDelete, 220)
+    } else if (delta < -40) {
+      rowRef.current.style.transform = "translateX(-72px)"
+      zoneRef.current.style.width = "72px"
+    } else {
+      rowRef.current.style.transform = "translateX(0)"
+      zoneRef.current.style.width = "72px"
+    }
+  }
+
+  return (
+    <div className="relative overflow-hidden rounded-xl">
+      <div ref={zoneRef} className="absolute right-0 top-0 bottom-0 flex items-center justify-center rounded-r-xl" style={{ backgroundColor: "oklch(0.54 0.2 3.76)", width: "72px" }}>
+        <Trash2 size={16} className="text-white" />
+      </div>
+      <div
+        ref={rowRef}
+        onTouchStart={onTouchStart}
+        onTouchMove={onTouchMove}
+        onTouchEnd={onTouchEnd}
+        onClick={(e) => {
+          if (rowRef.current && rowRef.current.style.transform !== "translateX(0px)" && rowRef.current.style.transform !== "") {
+            rowRef.current.style.transition = "transform 0.2s ease"
+            rowRef.current.style.transform = "translateX(0)"
+            e.stopPropagation()
+          }
+        }}
+        style={{ transform: "translateX(0)", transition: "transform 0.2s ease" }}
+        className="relative z-10"
+      >
+        {children}
+      </div>
+    </div>
+  )
+}
+
 export default function FridgeScanner({ recipes, recentScans }: { recipes: RecipeProp[]; recentScans: RecentScan[] }) {
   const inputRef = useRef<HTMLInputElement>(null)
   const addInputRef = useRef<HTMLInputElement>(null)
@@ -45,6 +107,7 @@ export default function FridgeScanner({ recipes, recentScans }: { recipes: Recip
   const [addText, setAddText] = useState("")
   const [error, setError] = useState("")
 
+  const [scans, setScans] = useState<RecentScan[]>(recentScans)
   const [matching, setMatching] = useState<MatchedRecipe[] | null>(null)
   const [matchLoading, setMatchLoading] = useState(false)
   const [suggesting, setSuggesting] = useState(false)
@@ -340,34 +403,41 @@ export default function FridgeScanner({ recipes, recentScans }: { recipes: Recip
       )}
 
       {/* Recent scans */}
-      {!preview && recentScans.length > 0 && (
+      {!preview && scans.length > 0 && (
         <div className="space-y-2">
           <p className="text-sm font-medium">Recent scans</p>
           <div className="space-y-1">
-            {recentScans.map((scan) => (
-              <button
+            {scans.map((scan) => (
+              <SwipeToDeleteRow
                 key={scan.id}
-                onClick={() => {
-                  setIngredients(scan.ingredients)
-                  setMatching(null)
-                  setSuggestions([])
-                  setError("")
+                onDelete={async () => {
+                  setScans((s) => s.filter((x) => x.id !== scan.id))
+                  await deleteFridgeScan(scan.id)
                 }}
-                className="w-full text-left px-4 py-3 bg-muted rounded-xl hover:bg-muted/80 transition-colors"
               >
-                <p className="text-sm font-medium">{formatScanLabel(scan)}</p>
-                <p className="text-xs text-muted-foreground mt-0.5 truncate">
-                  {scan.ingredients.slice(0, 6).join(", ")}
-                  {scan.ingredients.length > 6 ? ` +${scan.ingredients.length - 6} more` : ""}
-                </p>
-              </button>
+                <button
+                  onClick={() => {
+                    setIngredients(scan.ingredients)
+                    setMatching(null)
+                    setSuggestions([])
+                    setError("")
+                  }}
+                  className="w-full text-left px-4 py-3 bg-muted"
+                >
+                  <p className="text-sm font-medium">{formatScanLabel(scan)}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5 truncate">
+                    {scan.ingredients.slice(0, 6).join(", ")}
+                    {scan.ingredients.length > 6 ? ` +${scan.ingredients.length - 6} more` : ""}
+                  </p>
+                </button>
+              </SwipeToDeleteRow>
             ))}
           </div>
         </div>
       )}
 
       {/* Empty state */}
-      {!preview && recentScans.length === 0 && (
+      {!preview && scans.length === 0 && (
         <p className="text-center text-xs text-muted-foreground py-2">
           AI scans your fridge, you confirm what's there, then we find recipes you can cook right now
         </p>
