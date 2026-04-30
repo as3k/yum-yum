@@ -1,4 +1,5 @@
 import BottomNav from "@/components/bottom-nav"
+import SideNav from "@/components/side-nav"
 import SetTimezone from "@/components/set-timezone"
 import UpdatePrompt from "@/components/update-prompt"
 
@@ -23,6 +24,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       >
         {children}
       </main>
+      <SideNav />
       <BottomNav />
       <UpdatePrompt />
     </div>

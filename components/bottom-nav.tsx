@@ -2,13 +2,11 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Calendar, BookOpen, Refrigerator, ShoppingCart, User } from "lucide-react"
+import { Calendar, BookOpen, User } from "lucide-react"
 
 const links = [
   { href: "/plan", icon: Calendar, label: "Plan" },
   { href: "/recipes", icon: BookOpen, label: "Recipes" },
-  { href: "/fridge", icon: Refrigerator, label: "Fridge" },
-  { href: "/grocery", icon: ShoppingCart, label: "Grocery" },
   { href: "/you", icon: User, label: "You" },
 ]
 
