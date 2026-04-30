@@ -33,7 +33,7 @@ export default async function GroceryPage() {
   const checkedCount = items.filter((i) => i.checked).length
 
   return (
-    <div className="max-w-2xl mx-auto px-4 pt-6 pb-4">
+    <div className="max-w-2xl mx-auto px-4 pt-8 pb-6">
       <div className="flex items-center justify-between mb-5">
         <div>
           <h1 className="text-xl font-semibold tracking-tight">Grocery List</h1>

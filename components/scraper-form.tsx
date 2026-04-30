@@ -117,7 +117,7 @@ export default function ScraperForm() {
         <button
           type="submit"
           disabled={loading}
-          className="w-full h-11 bg-foreground text-background text-sm font-medium rounded hover:opacity-80 transition-opacity disabled:opacity-40 flex items-center justify-center gap-2"
+          className="w-full h-11 bg-accent text-white text-sm font-medium rounded hover:opacity-80 transition-opacity disabled:opacity-40 flex items-center justify-center gap-2"
         >
           {loading && <Loader2 size={16} className="animate-spin" />}
           {loading ? "Grabbing it…" : "Import Recipe"}
@@ -167,7 +167,7 @@ export default function ScraperForm() {
               onClick={() => setMealType(type)}
               className={`flex-1 h-10 rounded text-sm font-medium capitalize transition-colors ${
                 mealType === type
-                  ? "bg-foreground text-background"
+                  ? "bg-accent text-white"
                   : "bg-muted text-muted-foreground hover:text-foreground"
               }`}
             >
@@ -201,7 +201,7 @@ export default function ScraperForm() {
         <button
           onClick={handleSave}
           disabled={saving}
-          className="flex-1 h-11 bg-foreground text-background text-sm font-medium rounded hover:opacity-80 transition-opacity disabled:opacity-40 flex items-center justify-center gap-2"
+          className="flex-1 h-11 bg-accent text-white text-sm font-medium rounded hover:opacity-80 transition-opacity disabled:opacity-40 flex items-center justify-center gap-2"
         >
           {saving && <Loader2 size={16} className="animate-spin" />}
           {saving ? "Saving…" : activeViolations.length > 0 ? "Save anyway" : "Save Recipe"}

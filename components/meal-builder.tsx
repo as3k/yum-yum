@@ -218,7 +218,7 @@ export default function MealBuilder({
       <button
         onClick={handleSave}
         disabled={saving}
-        className="w-full h-12 bg-foreground text-background text-sm font-medium rounded hover:opacity-80 transition-opacity disabled:opacity-40 flex items-center justify-center gap-2"
+        className="w-full h-12 bg-accent text-white text-sm font-medium rounded hover:opacity-80 transition-opacity disabled:opacity-40 flex items-center justify-center gap-2"
       >
         {saving ? (
           <><Loader2 size={15} className="animate-spin" /> Saving…</>

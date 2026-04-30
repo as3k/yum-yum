@@ -222,7 +222,7 @@ export default function PlanEditor({
                     onClick={() => setVibe(v)}
                     className={`h-10 rounded text-sm font-medium capitalize transition-colors ${
                       vibe === v
-                        ? "bg-foreground text-background"
+                        ? "bg-accent text-white"
                         : "bg-muted text-muted-foreground hover:text-foreground"
                     }`}
                   >
@@ -241,7 +241,7 @@ export default function PlanEditor({
           <div className="shrink-0 px-4 pb-8 pt-3 border-t border-border">
             <button
               onClick={handleGenerate}
-              className="w-full h-12 bg-foreground text-background text-sm font-medium rounded flex items-center justify-center gap-2 hover:opacity-80 transition-opacity"
+              className="w-full h-12 bg-accent text-white text-sm font-medium rounded flex items-center justify-center gap-2 hover:opacity-80 transition-opacity"
             >
               <Sparkles size={15} />
               Build my week!
@@ -250,17 +250,17 @@ export default function PlanEditor({
         </div>
       )}
 
-      <div className="space-y-2">
+      <div className="space-y-3">
         {days.map((day) => (
-          <div key={day.date} className="rounded-lg border border-border overflow-hidden">
-            <div className="px-4 py-2.5 bg-muted border-b border-border">
-              <span className="text-sm font-semibold">{getDayLabel(day.date)}</span>
+          <div key={day.date} className="rounded-2xl bg-muted overflow-hidden">
+            <div className="px-5 pt-5 pb-2">
+              <span className="text-sm font-bold tracking-tight">{getDayLabel(day.date)}</span>
             </div>
-            <div className="divide-y divide-border">
+            <div className="px-5 pb-5 space-y-3.5">
               {MEAL_ORDER.map((mealType) => {
                 const slot = day[mealType]
                 return (
-                  <div key={mealType} className="flex items-center gap-3 px-4 py-2.5 min-h-[44px]">
+                  <div key={mealType} className="flex items-center gap-3 min-h-[44px]">
                     <span className="text-xs font-mono text-muted-foreground w-3 shrink-0">
                       {MEAL_LABELS[mealType]}
                     </span>

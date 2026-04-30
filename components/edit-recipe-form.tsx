@@ -141,7 +141,7 @@ export default function EditRecipeForm({ recipe }: { recipe: RecipeData }) {
               type="button"
               onClick={() => setMealType(t)}
               className={`h-10 rounded text-sm font-medium capitalize transition-colors ${
-                mealType === t ? "bg-foreground text-background" : "bg-muted text-muted-foreground hover:text-foreground"
+                mealType === t ? "bg-accent text-white" : "bg-muted text-muted-foreground hover:text-foreground"
               }`}
             >
               {t}
@@ -298,7 +298,7 @@ export default function EditRecipeForm({ recipe }: { recipe: RecipeData }) {
       <button
         onClick={handleSave}
         disabled={saving}
-        className="w-full h-12 bg-foreground text-background text-sm font-medium rounded hover:opacity-80 transition-opacity disabled:opacity-40 flex items-center justify-center gap-2"
+        className="w-full h-12 bg-accent text-white text-sm font-medium rounded hover:opacity-80 transition-opacity disabled:opacity-40 flex items-center justify-center gap-2"
       >
         {saving ? (
           <>

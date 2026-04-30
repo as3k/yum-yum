@@ -76,7 +76,7 @@ export default function RecipeDiscovery() {
         <button
           type="submit"
           disabled={searching || !query.trim()}
-          className="w-full h-11 bg-foreground text-background text-sm font-medium rounded hover:opacity-80 transition-opacity disabled:opacity-40 flex items-center justify-center gap-2"
+          className="w-full h-11 bg-accent text-white text-sm font-medium rounded hover:opacity-80 transition-opacity disabled:opacity-40 flex items-center justify-center gap-2"
         >
           {searching ? (
             <>
@@ -286,7 +286,7 @@ export default function RecipeDiscovery() {
         className={`w-full h-12 text-sm font-medium rounded flex items-center justify-center gap-2 transition-all ${
           isSaved
             ? "bg-muted text-muted-foreground"
-            : "bg-foreground text-background hover:opacity-80"
+            : "bg-accent text-white hover:opacity-80"
         } disabled:opacity-60`}
       >
         {isSaving ? (

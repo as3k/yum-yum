@@ -625,3 +625,13 @@ export async function deleteMeal(id: number) {
   await db.delete(meals).where(eq(meals.id, id))
   revalidatePath("/meals")
 }
+
+export async function deleteRecipe(id: number, slug: string) {
+  const session = await auth()
+  if (!session?.user?.id) throw new Error("Unauthorized")
+
+  await db.delete(recipes).where(eq(recipes.id, id))
+  revalidatePath("/recipes")
+  revalidatePath(`/recipes/${slug}`)
+  revalidatePath("/favorites")
+}

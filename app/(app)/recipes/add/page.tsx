@@ -4,7 +4,7 @@ import { ChevronLeft } from "lucide-react"
 
 export default function AddRecipePage() {
   return (
-    <div className="max-w-2xl mx-auto px-4 pt-6 pb-4">
+    <div className="max-w-2xl mx-auto px-4 pt-8 pb-6">
       <div className="mb-5">
         <Link
           href="/recipes"

@@ -41,9 +41,11 @@ export default async function PlanPage({
     weekParam === nextWeekStart ||
     (weekParam === currentWeekStart && !currentPlan)
 
+  const session = await auth()
+  const firstName = session?.user?.name?.split(" ")[0] ?? "there"
+
   // ── Editable view ──────────────────────────────────────────────────────────
   if (isEditing && weekParam) {
-    const session = await auth()
     const userId = session?.user?.id
 
     const [existingPlan, allRecipes, favorites] = await Promise.all([
@@ -100,7 +102,13 @@ export default async function PlanPage({
     const isThisWeek = weekParam === currentWeekStart
 
     return (
-      <div className="max-w-2xl mx-auto px-4 pt-6 pb-4">
+      <div className="max-w-2xl mx-auto px-4 pt-8 pb-6">
+        <div className="mb-5">
+          <p className="text-xs text-muted-foreground">Hey {firstName} 🌱</p>
+          <h1 className="text-2xl font-bold tracking-tight leading-tight">
+            {isThisWeek ? "Here's your week" : "Plan next week"}
+          </h1>
+        </div>
         <PlanHeader
           currentWeekStart={currentWeekStart}
           nextWeekStart={nextWeekStart}
@@ -108,9 +116,6 @@ export default async function PlanPage({
           noCurrentPlan={!currentPlan}
         />
         <div className="flex items-center justify-between mb-5">
-          <h1 className="text-xl font-semibold tracking-tight">
-            {isThisWeek ? "This Week" : "Next Week"}
-          </h1>
           <span className="text-sm text-muted-foreground">{formatWeekRange(weekParam)}</span>
         </div>
         <PlanEditor
@@ -125,7 +130,11 @@ export default async function PlanPage({
   // ── Empty state (no plan, not in edit mode) ────────────────────────────────
   if (!currentPlan) {
     return (
-      <div className="max-w-2xl mx-auto px-4 pt-6 pb-4">
+      <div className="max-w-2xl mx-auto px-4 pt-8 pb-6">
+        <div className="mb-5">
+          <p className="text-xs text-muted-foreground">Hey {firstName} 🌱</p>
+          <h1 className="text-2xl font-bold tracking-tight">Let's get cooking</h1>
+        </div>
         <PlanHeader
           currentWeekStart={currentWeekStart}
           nextWeekStart={nextWeekStart}
@@ -137,7 +146,7 @@ export default async function PlanPage({
           <p className="text-muted-foreground text-sm">Nothing planned yet!</p>
           <Link
             href={`/plan?week=${currentWeekStart}`}
-            className="inline-flex items-center gap-1.5 text-sm font-medium px-4 h-9 bg-foreground text-background rounded hover:opacity-80 transition-opacity"
+            className="inline-flex items-center gap-1.5 text-sm font-medium px-4 h-9 bg-accent text-white rounded hover:opacity-80 transition-opacity"
           >
             Plan this week
           </Link>
@@ -174,17 +183,18 @@ export default async function PlanPage({
   }))
 
   return (
-    <div className="max-w-2xl mx-auto px-4 pt-6 pb-4">
+    <div className="max-w-2xl mx-auto px-4 pt-8 pb-6">
+      <div className="mb-5">
+        <p className="text-xs text-muted-foreground">Hey {firstName} 🌱</p>
+        <h1 className="text-2xl font-bold tracking-tight leading-tight">Here's your week</h1>
+        <p className="text-sm text-muted-foreground mt-0.5">{formatWeekRange(currentPlan.weekStart)}</p>
+      </div>
       <PlanHeader
         currentWeekStart={currentWeekStart}
         nextWeekStart={nextWeekStart}
         activeWeek={currentWeekStart}
         noCurrentPlan={false}
       />
-      <div className="flex items-center justify-between mb-5">
-        <h1 className="text-xl font-semibold tracking-tight">This Week</h1>
-        <span className="text-sm text-muted-foreground">{formatWeekRange(currentPlan.weekStart)}</span>
-      </div>
       <WeekGrid days={days} today={today} />
     </div>
   )

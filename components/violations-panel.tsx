@@ -53,7 +53,7 @@ export default function ViolationsPanel({
               {v.suggestion && (
                 <button
                   onClick={() => onFix(i, v.suggestion!)}
-                  className="flex items-center gap-1 text-xs font-medium px-2 py-1 bg-foreground text-background rounded hover:opacity-80 transition-opacity"
+                  className="flex items-center gap-1 text-xs font-medium px-2 py-1 bg-accent text-white rounded hover:opacity-80 transition-opacity"
                 >
                   <Check size={11} />
                   Apply fix

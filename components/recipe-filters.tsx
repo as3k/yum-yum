@@ -21,7 +21,7 @@ export default function RecipeFilters({ active }: { active?: string }) {
             href={value ? `/recipes?meal=${value}` : "/recipes"}
             className={`shrink-0 px-3 h-8 rounded text-sm font-medium transition-colors ${
               isActive
-                ? "bg-foreground text-background"
+                ? "bg-accent text-white"
                 : "bg-muted text-muted-foreground hover:text-foreground"
             }`}
           >

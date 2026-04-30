@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation"
 import Image from "next/image"
 import Link from "next/link"
-import { ChevronLeft, Clock, Users, AlertTriangle, ChefHat, Pencil } from "lucide-react"
+import { ChevronLeft, Clock, Users, AlertTriangle, ChefHat } from "lucide-react"
 import { db } from "@/lib/db"
 import { recipes, userRecipeFavorites, userRecipeRatings } from "@/lib/db/schema"
 import { eq, and } from "drizzle-orm"
@@ -10,6 +10,7 @@ import { formatTime } from "@/lib/utils"
 import FavoriteButton from "@/components/favorite-button"
 import StarRating from "@/components/star-rating"
 import NutritionPanel from "@/components/nutrition-panel"
+import RecipeActionsMenu from "@/components/recipe-actions-menu"
 
 export default async function RecipePage({
   params,
@@ -47,9 +48,9 @@ export default async function RecipePage({
   const unfixedFlags = (recipe.fodmapFlags ?? []).filter((f) => !f.skipped)
 
   return (
-    <div className="max-w-2xl mx-auto pb-4">
+    <div className="max-w-2xl mx-auto pb-6">
       {/* Back + actions */}
-      <div className="flex items-center justify-between px-4 pt-4 mb-2">
+      <div className="flex items-center justify-between px-4 pt-6 mb-3">
         <Link
           href="/recipes"
           className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
@@ -58,16 +59,10 @@ export default async function RecipePage({
           Recipes
         </Link>
         <div className="flex items-center gap-2">
-          <Link
-            href={`/recipes/${recipe.slug}/edit`}
-            className="flex items-center gap-1.5 text-sm font-medium px-3 h-8 border border-border rounded hover:bg-muted transition-colors"
-          >
-            <Pencil size={14} />
-            Edit
-          </Link>
+          <RecipeActionsMenu id={recipe.id} slug={recipe.slug} />
           <Link
             href={`/recipes/${recipe.slug}/cook`}
-            className="flex items-center gap-1.5 text-sm font-medium px-3 h-8 bg-foreground text-background rounded hover:opacity-80 transition-opacity"
+            className="flex items-center gap-1.5 text-sm font-medium px-3 h-8 bg-accent text-white rounded-lg hover:opacity-80 transition-opacity"
           >
             <ChefHat size={14} />
             Cook
@@ -82,7 +77,7 @@ export default async function RecipePage({
 
       {/* Image */}
       {recipe.imageUrl && (
-        <div className="relative w-full aspect-video bg-muted mb-4">
+        <div className="relative w-full aspect-video bg-muted mb-6">
           <Image
             src={recipe.imageUrl}
             alt={recipe.title}
@@ -94,15 +89,15 @@ export default async function RecipePage({
         </div>
       )}
 
-      <div className="px-4 space-y-6">
+      <div className="px-4 space-y-8">
         {/* Title + meta */}
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight leading-tight">{recipe.title}</h1>
+          <h1 className="text-2xl font-bold tracking-tight leading-tight">{recipe.title}</h1>
           {recipe.description && (
-            <p className="text-sm text-muted-foreground mt-1 leading-relaxed">{recipe.description}</p>
+            <p className="text-sm text-muted-foreground mt-2 leading-relaxed">{recipe.description}</p>
           )}
 
-          <div className="flex items-center flex-wrap gap-4 mt-3">
+          <div className="flex items-center flex-wrap gap-4 mt-4">
             {recipe.totalTimeMin && (
               <span className="flex items-center gap-1.5 text-sm text-muted-foreground">
                 <Clock size={14} />
@@ -118,8 +113,7 @@ export default async function RecipePage({
             <span className="text-sm text-muted-foreground capitalize">{recipe.mealType}</span>
           </div>
 
-          {/* Rating */}
-          <div className="mt-3">
+          <div className="mt-4">
             <StarRating
               recipeId={recipe.id}
               slug={recipe.slug}
@@ -137,7 +131,7 @@ export default async function RecipePage({
 
         {/* FODMAP flags */}
         {unfixedFlags.length > 0 && (
-          <div className="border border-border rounded-lg p-3 space-y-2">
+          <div className="bg-muted rounded-2xl p-4 space-y-2">
             <div className="flex items-center gap-2 text-sm font-medium">
               <AlertTriangle size={14} />
               Heads up — FODMAP flags
@@ -154,8 +148,8 @@ export default async function RecipePage({
         {/* Ingredients */}
         {recipe.ingredients && recipe.ingredients.length > 0 && (
           <div>
-            <h2 className="text-base font-semibold mb-3">Ingredients</h2>
-            <ul className="space-y-2">
+            <h2 className="text-base font-semibold mb-4">Ingredients</h2>
+            <ul className="space-y-3">
               {recipe.ingredients.map((ing, i) => (
                 <li key={i} className="text-sm flex gap-2">
                   <span className="text-muted-foreground shrink-0 mt-px">—</span>
@@ -174,11 +168,11 @@ export default async function RecipePage({
         {/* Instructions */}
         {recipe.instructions && recipe.instructions.length > 0 && (
           <div>
-            <h2 className="text-base font-semibold mb-3">Instructions</h2>
-            <ol className="space-y-3">
+            <h2 className="text-base font-semibold mb-4">Instructions</h2>
+            <ol className="space-y-4">
               {recipe.instructions.map((step, i) => (
                 <li key={i} className="flex gap-3">
-                  <span className="text-muted-foreground text-sm font-mono shrink-0 mt-0.5">
+                  <span className="text-accent text-sm font-semibold shrink-0 mt-0.5 w-5">
                     {i + 1}.
                   </span>
                   <p className="text-sm leading-relaxed">{step.text}</p>
@@ -206,7 +200,7 @@ export default async function RecipePage({
 
         {/* Source */}
         {recipe.sourceUrl && recipe.sourceUrl !== "original" && (
-          <div className="pt-2 border-t border-border">
+          <div className="pt-4 border-t border-border">
             <a
               href={recipe.sourceUrl}
               target="_blank"

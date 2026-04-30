@@ -42,12 +42,12 @@ export default async function MealsPage() {
   })
 
   return (
-    <div className="max-w-2xl mx-auto px-4 pt-6 pb-4">
+    <div className="max-w-2xl mx-auto px-4 pt-8 pb-6">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-xl font-semibold tracking-tight">Meals</h1>
         <Link
           href="/meals/new"
-          className="flex items-center gap-1.5 text-sm font-medium px-3 h-8 bg-foreground text-background rounded hover:opacity-80 transition-opacity"
+          className="flex items-center gap-1.5 text-sm font-medium px-3 h-8 bg-accent text-white rounded hover:opacity-80 transition-opacity"
         >
           <Plus size={14} />
           New meal

@@ -9,7 +9,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       <header className="sticky top-0 z-10 h-12 flex items-center justify-end px-4 border-b border-border bg-background">
         <ThemeToggle />
       </header>
-      <main className="flex-1 pb-20">{children}</main>
+      <main className="flex-1" style={{ paddingBottom: "calc(5rem + env(safe-area-inset-bottom))" }}>{children}</main>
       <BottomNav />
     </div>
   )

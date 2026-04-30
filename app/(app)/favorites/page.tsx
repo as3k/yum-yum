@@ -47,7 +47,7 @@ export default async function FavoritesPage() {
     .filter(Boolean) as typeof favoriteRecipes
 
   return (
-    <div className="max-w-2xl mx-auto px-4 pt-6 pb-4">
+    <div className="max-w-2xl mx-auto px-4 pt-8 pb-6">
       <h1 className="text-xl font-semibold tracking-tight mb-5">Favorites</h1>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {orderedRecipes.map((recipe) => (

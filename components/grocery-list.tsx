@@ -49,11 +49,11 @@ export default function GroceryList({
             <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-2">
               {category}
             </h2>
-            <div className="border border-border rounded-lg divide-y divide-border">
+            <div className="bg-muted rounded-2xl divide-y divide-border/50">
               {items.map((item) => (
                 <label
                   key={item.id}
-                  className="flex items-center gap-3 px-4 py-3 cursor-pointer select-none"
+                  className="flex items-center gap-3 px-5 py-4 cursor-pointer select-none"
                 >
                   <input
                     type="checkbox"

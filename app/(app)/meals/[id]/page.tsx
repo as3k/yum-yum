@@ -51,7 +51,7 @@ export default async function MealPage({
   )
 
   return (
-    <div className="max-w-2xl mx-auto px-4 pt-6 pb-4">
+    <div className="max-w-2xl mx-auto px-4 pt-8 pb-6">
       <div className="flex items-center justify-between mb-6">
         <Link
           href="/meals"
@@ -79,7 +79,7 @@ export default async function MealPage({
 
         {/* Combined nutrition */}
         {nutritionRows.length > 0 && (
-          <div className="border border-border rounded-lg p-4 space-y-3">
+          <div className="bg-muted rounded-2xl p-5 space-y-3">
             <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
               Combined nutrition
               {nutritionRows.length < rows.length && (
@@ -116,7 +116,7 @@ export default async function MealPage({
                 <Link
                   key={r.recipeId}
                   href={`/recipes/${r.slug}`}
-                  className="flex items-center gap-3 px-4 py-3 border border-border rounded-lg hover:bg-muted transition-colors"
+                  className="flex items-center gap-3 px-5 py-4 bg-muted rounded-2xl hover:opacity-80 transition-opacity"
                 >
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium truncate">{r.title}</p>

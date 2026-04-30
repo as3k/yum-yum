@@ -74,7 +74,7 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full h-11 bg-foreground text-background text-sm font-medium rounded transition-opacity hover:opacity-80 disabled:opacity-40"
+            className="w-full h-11 bg-accent text-white text-sm font-medium rounded transition-opacity hover:opacity-80 disabled:opacity-40"
           >
             {loading ? "On my way…" : "Let's go"}
           </button>

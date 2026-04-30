@@ -95,11 +95,11 @@ export default function CookingSession({
                 <div
                   className={`w-5 h-5 rounded border shrink-0 flex items-center justify-center transition-colors ${
                     checked.has(i)
-                      ? "bg-foreground border-foreground"
+                      ? "bg-accent border-accent"
                       : "border-muted-foreground"
                   }`}
                 >
-                  {checked.has(i) && <Check size={11} className="text-background" />}
+                  {checked.has(i) && <Check size={11} className="text-white" />}
                 </div>
                 <span className={`text-sm leading-snug ${checked.has(i) ? "line-through text-muted-foreground" : ""}`}>
                   {ing.quantity && `${ing.quantity} `}
@@ -123,7 +123,7 @@ export default function CookingSession({
               setPhase("steps")
               setStepIndex(0)
             }}
-            className="w-full h-12 bg-foreground text-background text-sm font-medium rounded flex items-center justify-center gap-2 hover:opacity-80 transition-opacity"
+            className="w-full h-12 bg-accent text-white text-sm font-medium rounded flex items-center justify-center gap-2 hover:opacity-80 transition-opacity"
           >
             {checked.size === ingredients.length ? "Ready! Let's cook" : "Skip ahead to steps"}
             <ChevronRight size={16} />
@@ -165,7 +165,7 @@ export default function CookingSession({
       {/* Progress bar */}
       <div className="h-0.5 bg-muted shrink-0">
         <div
-          className="h-full bg-foreground transition-all duration-300"
+          className="h-full bg-accent transition-all duration-300"
           style={{ width: `${((stepIndex + 1) / instructions.length) * 100}%` }}
         />
       </div>
@@ -184,7 +184,7 @@ export default function CookingSession({
           </span>
           <button
             onClick={() => setRunning((r) => !r)}
-            className="w-12 h-12 rounded-full bg-foreground text-background flex items-center justify-center hover:opacity-80 transition-opacity"
+            className="w-12 h-12 rounded-full bg-accent text-white flex items-center justify-center hover:opacity-80 transition-opacity"
             aria-label={running ? "Pause timer" : "Start timer"}
           >
             {running ? <Pause size={18} /> : <Play size={18} className="ml-0.5" />}
@@ -215,7 +215,7 @@ export default function CookingSession({
         {isLast ? (
           <button
             onClick={() => router.push(`/recipes/${slug}`)}
-            className="flex-1 h-12 bg-foreground text-background rounded text-sm font-medium flex items-center justify-center gap-2 hover:opacity-80 transition-opacity"
+            className="flex-1 h-12 bg-accent text-white rounded text-sm font-medium flex items-center justify-center gap-2 hover:opacity-80 transition-opacity"
           >
             <Check size={16} />
             All done! Great work
@@ -223,7 +223,7 @@ export default function CookingSession({
         ) : (
           <button
             onClick={() => goToStep(stepIndex + 1)}
-            className="flex-1 h-12 bg-foreground text-background rounded text-sm font-medium flex items-center justify-center gap-1 hover:opacity-80 transition-opacity"
+            className="flex-1 h-12 bg-accent text-white rounded text-sm font-medium flex items-center justify-center gap-1 hover:opacity-80 transition-opacity"
           >
             Next
             <ChevronRight size={16} />

@@ -18,7 +18,7 @@ export default async function NewMealPage() {
     .orderBy(asc(recipes.title))
 
   return (
-    <div className="max-w-2xl mx-auto px-4 pt-6 pb-4">
+    <div className="max-w-2xl mx-auto px-4 pt-8 pb-6">
       <div className="mb-6">
         <Link
           href="/meals"
