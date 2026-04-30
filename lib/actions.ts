@@ -2,7 +2,7 @@
 
 import { and, eq, desc, lte } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
-import OpenAI from "openai"
+import { getAIClient, AI_MODEL } from "./ai"
 import { auth } from "./auth"
 import { db } from "./db"
 import {
@@ -295,9 +295,9 @@ export async function generateAIMealPlan(weekStart: string, context?: string) {
 
   const weekDates = getWeekDates(weekStart)
 
-  const client = new OpenAI()
+  const client = getAIClient()
   const response = await client.chat.completions.create({
-    model: "gpt-4o-mini",
+    model: AI_MODEL,
     tools: [
       {
         type: "function",
@@ -416,9 +416,9 @@ export async function discoverRecipes(query: string): Promise<DiscoveryResult[]>
   const session = await auth()
   if (!session?.user?.id) throw new Error("Unauthorized")
 
-  const client = new OpenAI()
+  const client = getAIClient()
   const response = await client.chat.completions.create({
-    model: "gpt-4o-mini",
+    model: AI_MODEL,
     tools: [
       {
         type: "function",
@@ -568,9 +568,9 @@ export async function estimateNutrition(recipeId: number, slug: string) {
     .map((i) => [i.quantity, i.unit, i.name].filter(Boolean).join(" "))
     .join("\n")
 
-  const client = new OpenAI()
+  const client = getAIClient()
   const response = await client.chat.completions.create({
-    model: "gpt-4o-mini",
+    model: AI_MODEL,
     tools: [
       {
         type: "function",
@@ -732,9 +732,9 @@ export async function matchFridgeToRecipes(
   const session = await auth()
   if (!session?.user?.id) throw new Error("Unauthorized")
 
-  const client = new OpenAI()
+  const client = getAIClient()
   const response = await client.chat.completions.create({
-    model: "gpt-4o-mini",
+    model: AI_MODEL,
     tools: [
       {
         type: "function",
@@ -796,9 +796,9 @@ export async function suggestFromFridge(ingredients: string[]): Promise<Discover
   const session = await auth()
   if (!session?.user?.id) throw new Error("Unauthorized")
 
-  const client = new OpenAI()
+  const client = getAIClient()
   const response = await client.chat.completions.create({
-    model: "gpt-4o-mini",
+    model: AI_MODEL,
     tools: [
       {
         type: "function",
