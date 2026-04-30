@@ -167,3 +167,18 @@ export const groceryItems = pgTable("grocery_items", {
   checkedAt: timestamp("checked_at"),
   recipeIds: integer("recipe_ids").array().default([]),
 })
+
+export const pushSubscriptions = pgTable(
+  "push_subscriptions",
+  {
+    id: serial("id").primaryKey(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    endpoint: text("endpoint").notNull(),
+    p256dh: text("p256dh").notNull(),
+    auth: text("auth").notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (t) => [unique().on(t.userId, t.endpoint)]
+)

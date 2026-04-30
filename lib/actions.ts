@@ -14,6 +14,7 @@ import {
   recipes,
   userRecipeFavorites,
   userRecipeRatings,
+  pushSubscriptions,
   type FodmapFlag,
   type Ingredient,
   type Instruction,
@@ -634,4 +635,36 @@ export async function deleteRecipe(id: number, slug: string) {
   revalidatePath("/recipes")
   revalidatePath(`/recipes/${slug}`)
   revalidatePath("/favorites")
+}
+
+export async function subscribeToPush(subscription: {
+  endpoint: string
+  keys: { p256dh: string; auth: string }
+}) {
+  const session = await auth()
+  if (!session?.user?.id) throw new Error("Unauthorized")
+
+  await db
+    .insert(pushSubscriptions)
+    .values({
+      userId: session.user.id,
+      endpoint: subscription.endpoint,
+      p256dh: subscription.keys.p256dh,
+      auth: subscription.keys.auth,
+    })
+    .onConflictDoNothing()
+}
+
+export async function unsubscribeFromPush(endpoint: string) {
+  const session = await auth()
+  if (!session?.user?.id) throw new Error("Unauthorized")
+
+  await db
+    .delete(pushSubscriptions)
+    .where(
+      and(
+        eq(pushSubscriptions.userId, session.user.id),
+        eq(pushSubscriptions.endpoint, endpoint)
+      )
+    )
 }
