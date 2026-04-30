@@ -2,6 +2,10 @@
 
 declare const self: ServiceWorkerGlobalScope
 
+self.addEventListener("message", (event) => {
+  if (event.data?.type === "SKIP_WAITING") self.skipWaiting()
+})
+
 self.addEventListener("push", (event) => {
   const data = event.data?.json() ?? {}
   const title: string = data.title ?? "Yum Yum"

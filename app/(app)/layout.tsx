@@ -2,6 +2,7 @@ import BottomNav from "@/components/bottom-nav"
 import ThemeToggle from "@/components/theme-toggle"
 import SetTimezone from "@/components/set-timezone"
 import NotificationPrompt from "@/components/notification-prompt"
+import UpdatePrompt from "@/components/update-prompt"
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -13,6 +14,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       </header>
       <main className="flex-1" style={{ paddingBottom: "calc(5rem + env(safe-area-inset-bottom))" }}>{children}</main>
       <BottomNav />
+      <UpdatePrompt />
     </div>
   )
 }
