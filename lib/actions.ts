@@ -2,6 +2,7 @@
 
 import { and, eq, desc, lte } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
+import { redirect } from "next/navigation"
 import { getAIClient, AI_MODEL } from "./ai"
 import { auth } from "./auth"
 import { db } from "./db"
@@ -15,8 +16,10 @@ import {
   meals,
   mealRecipes,
   recipes,
+  users,
   userRecipeFavorites,
   userRecipeRatings,
+  waitlist,
   pushSubscriptions,
   userPreferences,
   fridgeScans,
@@ -26,6 +29,8 @@ import {
   type NutritionData,
 } from "./db/schema"
 import { slugify, getWeekDates, getNextWeekStart } from "./utils"
+import bcrypt from "bcryptjs"
+import { sendInviteEmail } from "./email"
 
 type MealType = "breakfast" | "lunch" | "dinner" | "snack"
 
@@ -151,6 +156,7 @@ export async function saveRecipe(data: RecipeToSave) {
       fodmapFlags: data.fodmapFlags,
       nutritionPerServing: data.nutritionPerServing ?? null,
       addedDate: new Date().toISOString().split("T")[0],
+      householdId: session.user.householdId ?? null,
     })
     .onConflictDoUpdate({
       target: recipes.slug,
@@ -217,12 +223,14 @@ export async function updateRecipe(
   return newSlug
 }
 
-async function getOrCreateMealPlan(weekStart: string) {
+async function getOrCreateMealPlan(weekStart: string, householdId: string | null) {
   const existing = await db.query.mealPlans.findFirst({
-    where: eq(mealPlans.weekStart, weekStart),
+    where: householdId
+      ? and(eq(mealPlans.weekStart, weekStart), eq(mealPlans.householdId, householdId))
+      : eq(mealPlans.weekStart, weekStart),
   })
   if (existing) return existing
-  const [created] = await db.insert(mealPlans).values({ weekStart }).returning()
+  const [created] = await db.insert(mealPlans).values({ weekStart, householdId }).returning()
   return created
 }
 
@@ -235,7 +243,7 @@ export async function setMealPlanSlot(
   const session = await auth()
   if (!session?.user?.id) throw new Error("Unauthorized")
 
-  const plan = await getOrCreateMealPlan(weekStart)
+  const plan = await getOrCreateMealPlan(weekStart, session.user.householdId)
   const [slot] = await db
     .insert(mealPlanSlots)
     .values({ mealPlanId: plan.id, dayDate, mealType, recipeId })
@@ -365,7 +373,7 @@ Create a complete meal plan for the week.${context ? `\n\nAdditional context fro
   }
 
   // Save to DB
-  const plan = await getOrCreateMealPlan(weekStart)
+  const plan = await getOrCreateMealPlan(weekStart, session.user.householdId)
   const recipeMap = new Map(allRecipes.map((r) => [r.id, r]))
 
   const savedSlots = []
@@ -617,7 +625,7 @@ export async function createMeal(name: string, description: string | undefined, 
   const session = await auth()
   if (!session?.user?.id) throw new Error("Unauthorized")
 
-  const [meal] = await db.insert(meals).values({ name, description: description || null }).returning()
+  const [meal] = await db.insert(meals).values({ name, description: description || null, householdId: session.user.householdId ?? null }).returning()
   if (recipeIds.length > 0) {
     await db.insert(mealRecipes).values(
       recipeIds.map((recipeId, i) => ({ mealId: meal.id, recipeId, sortOrder: i }))
@@ -998,4 +1006,79 @@ export async function regenerateInviteCode() {
   await db.update(households).set({ inviteCode: newCode }).where(eq(households.id, householdId))
 
   revalidatePath("/settings/household")
+}
+
+// ── Phase 3: Waitlist + Signup ────────────────────────────────────────────────
+
+export async function submitWaitlist(formData: FormData) {
+  const name = (formData.get("name") as string)?.trim()
+  const email = (formData.get("email") as string)?.trim()
+  const message = (formData.get("message") as string)?.trim() || null
+
+  if (!name || !email) throw new Error("Name and email are required")
+
+  await db
+    .insert(waitlist)
+    .values({ name, email, message })
+    .onConflictDoNothing()
+
+  redirect("/signup/pending")
+}
+
+export async function approveWaitlistEntry(id: number) {
+  const session = await auth()
+  if (session?.user?.role !== "admin") throw new Error("Unauthorized")
+
+  const token = crypto.randomUUID()
+  const expires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+
+  const [entry] = await db
+    .update(waitlist)
+    .set({ status: "approved", inviteToken: token, tokenExpiresAt: expires, approvedAt: new Date() })
+    .where(eq(waitlist.id, id))
+    .returning()
+
+  await sendInviteEmail(entry.email, entry.name, token)
+  revalidatePath("/waitlist")
+}
+
+export async function rejectWaitlistEntry(id: number) {
+  const session = await auth()
+  if (session?.user?.role !== "admin") throw new Error("Unauthorized")
+
+  await db.update(waitlist).set({ status: "rejected" }).where(eq(waitlist.id, id))
+  revalidatePath("/waitlist")
+}
+
+export async function activateAccount(token: string, password: string) {
+  const entry = await db.query.waitlist.findFirst({
+    where: eq(waitlist.inviteToken, token),
+  })
+
+  if (!entry || entry.status !== "approved") throw new Error("Invalid invite link")
+  if (entry.tokenExpiresAt && entry.tokenExpiresAt < new Date()) throw new Error("Invite link has expired")
+
+  const passwordHash = await bcrypt.hash(password, 12)
+
+  const [user] = await db
+    .insert(users)
+    .values({
+      email: entry.email,
+      name: entry.name ?? entry.email.split("@")[0],
+      passwordHash,
+    })
+    .returning()
+
+  const inviteCode = Math.random().toString(36).slice(2, 7).toUpperCase()
+  const [household] = await db
+    .insert(households)
+    .values({ name: `${user.name}'s Kitchen`, inviteCode, createdBy: user.id })
+    .returning()
+
+  await db.insert(householdMembers).values({ householdId: household.id, userId: user.id, role: "owner" })
+
+  // Consume token
+  await db.update(waitlist).set({ status: "accepted", inviteToken: null }).where(eq(waitlist.id, entry.id))
+
+  redirect("/login?activated=1")
 }

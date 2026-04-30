@@ -1,11 +1,13 @@
 "use client"
 
 import { signIn } from "next-auth/react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { useState } from "react"
 
 export default function LoginPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const activated = searchParams.get("activated") === "1"
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
 
@@ -37,6 +39,12 @@ export default function LoginPage() {
           <h1 className="text-2xl font-semibold tracking-tight text-foreground">YumYum</h1>
           <p className="text-muted-foreground mt-1 text-sm">Ready to eat well this week?</p>
         </div>
+
+        {activated && (
+          <div className="rounded-lg bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 px-4 py-3">
+            <p className="text-sm text-green-800 dark:text-green-200 font-medium">Account activated! Sign in to get started.</p>
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-1.5">
@@ -79,6 +87,11 @@ export default function LoginPage() {
             {loading ? "On my way…" : "Let's go"}
           </button>
         </form>
+
+        <p className="text-center text-sm text-muted-foreground">
+          Don't have an account?{" "}
+          <a href="/signup" className="underline underline-offset-2 text-foreground">Request access</a>
+        </p>
       </div>
     </div>
   )
