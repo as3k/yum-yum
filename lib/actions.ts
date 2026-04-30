@@ -390,6 +390,7 @@ export type DiscoveryResult = {
     proteinG: number
   } | null
   healthNotes: string[]
+  missingIngredients?: string[]
 }
 
 export async function discoverRecipes(query: string): Promise<DiscoveryResult[]> {
@@ -745,6 +746,11 @@ export async function suggestFromFridge(ingredients: string[]): Promise<Discover
                       required: ["calories", "carbsG", "fiberG", "fatG", "proteinG"],
                     },
                     healthNotes: { type: "array", items: { type: "string" } },
+                    missingIngredients: {
+                      type: "array",
+                      items: { type: "string" },
+                      description: "Main ingredients not in the fridge list that you'd need to buy",
+                    },
                   },
                   required: ["title", "mealType", "description", "ingredients", "instructions", "estimatedNutritionPerServing", "healthNotes"],
                 },
@@ -760,11 +766,11 @@ export async function suggestFromFridge(ingredients: string[]): Promise<Discover
       {
         role: "system",
         content:
-          "You suggest recipes using ONLY ingredients from the user's fridge list. Do not add any ingredient not on the list — not even salt, pepper, oil, or spices unless they appear in the list. Every ingredient in your recipes must come directly from the provided list. Low-FODMAP, low-carb preferred. Suggest 3-4 recipes.",
+          "You suggest recipes based on what's in the user's fridge. Assume common pantry staples are always available (salt, pepper, oil, vinegar, butter, basic spices like cumin/paprika/oregano/chili flakes, garlic powder, soy sauce, mustard, hot sauce). Only flag missing items for MAIN ingredients — proteins (chicken, beef, fish), fresh produce (tomatoes, celery, peppers), dairy (yogurt, cheese, cream), or specialty items. If a recipe is mostly doable but needs 1-2 main ingredients not on the list, still suggest it but include a 'missingIngredients' field listing exactly what they'd need to grab. Prioritize recipes where everything is already available. Low-FODMAP, low-carb preferred. Suggest 3-4 recipes.",
       },
       {
         role: "user",
-        content: `My fridge contains: ${ingredients.join(", ")}\n\nSuggest recipes I can make using only these ingredients.`,
+        content: `My fridge contains: ${ingredients.join(", ")}\n\nSuggest recipes I can make. For each recipe, note any main ingredients I'd need to buy that aren't in my fridge.`,
       },
     ],
   })
@@ -786,6 +792,7 @@ export async function suggestFromFridge(ingredients: string[]): Promise<Discover
       instructions: Array<{ step: number; text: string }>
       estimatedNutritionPerServing?: { calories: number; carbsG: number; fiberG: number; fatG: number; proteinG: number }
       healthNotes?: string[]
+      missingIngredients?: string[]
     }>
   }
 
@@ -806,6 +813,7 @@ export async function suggestFromFridge(ingredients: string[]): Promise<Discover
     },
     nutrition: r.estimatedNutritionPerServing ?? null,
     healthNotes: r.healthNotes ?? [],
+    missingIngredients: r.missingIngredients ?? [],
   }))
 }
 

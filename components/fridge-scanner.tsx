@@ -297,6 +297,11 @@ export default function FridgeScanner({ recipes }: { recipes: RecipeProp[] }) {
                       {s.nutrition.calories} cal · {s.nutrition.proteinG}g protein · {s.nutrition.carbsG}g carbs
                     </p>
                   )}
+                  {s.missingIngredients && s.missingIngredients.length > 0 && (
+                    <p className="text-xs text-amber-500">
+                      Need to grab: {s.missingIngredients.join(", ")}
+                    </p>
+                  )}
                 </div>
               ))}
             </div>
