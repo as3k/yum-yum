@@ -26,9 +26,10 @@ export default async function TodayPage() {
   const tz = decodeURIComponent((await cookies()).get("tz")?.value ?? "")
   const today = todayStr(tz || undefined)
 
-  // Compute current hour in user's timezone (approximate via offset from cookie)
   const serverNow = new Date()
-  const nowHour = serverNow.getUTCHours() // close enough for greeting
+  const nowHour = tz
+    ? parseInt(serverNow.toLocaleString("en-US", { timeZone: tz, hour: "numeric", hour12: false })) % 24
+    : serverNow.getUTCHours()
 
   const currentPlan = await db.query.mealPlans.findFirst({
     where: lte(mealPlans.weekStart, today),
