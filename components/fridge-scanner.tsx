@@ -4,7 +4,7 @@ import { useRef, useState, KeyboardEvent } from "react"
 import { Camera, X, Loader2, Sparkles, ChevronRight, Plus, Search } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
-import { suggestFromFridge, matchFridgeToRecipes } from "@/lib/actions"
+import { suggestFromFridge, matchFridgeToRecipes, saveFridgeScan } from "@/lib/actions"
 import type { DiscoveryResult, FridgeMatch } from "@/lib/actions"
 import type { Ingredient } from "@/lib/db/schema"
 
@@ -17,12 +17,26 @@ interface RecipeProp {
   ingredients: unknown
 }
 
+interface RecentScan {
+  id: number
+  ingredients: string[]
+  scannedAt: Date
+}
+
+function formatScanLabel(scan: RecentScan): string {
+  const d = new Date(scan.scannedAt)
+  const hour = d.getHours()
+  const timeOfDay = hour < 12 ? "morning" : hour < 17 ? "afternoon" : hour < 21 ? "evening" : "night"
+  const day = d.toLocaleDateString("en-US", { weekday: "long" })
+  return `${day} ${timeOfDay} · ${scan.ingredients.length} items`
+}
+
 interface MatchedRecipe extends FridgeMatch {
   title: string
   slug: string
 }
 
-export default function FridgeScanner({ recipes }: { recipes: RecipeProp[] }) {
+export default function FridgeScanner({ recipes, recentScans }: { recipes: RecipeProp[]; recentScans: RecentScan[] }) {
   const inputRef = useRef<HTMLInputElement>(null)
   const addInputRef = useRef<HTMLInputElement>(null)
   const [preview, setPreview] = useState<string | null>(null)
@@ -50,7 +64,9 @@ export default function FridgeScanner({ recipes }: { recipes: RecipeProp[] }) {
       const res = await fetch("/api/fridge/analyze", { method: "POST", body: form })
       if (!res.ok) throw new Error()
       const data = await res.json()
-      setIngredients(data.ingredients ?? [])
+      const ings: string[] = data.ingredients ?? []
+      setIngredients(ings)
+      if (ings.length > 0) saveFridgeScan(ings).catch(() => {})
     } catch {
       setError("Couldn't read the photo — try again.")
     } finally {
@@ -323,8 +339,35 @@ export default function FridgeScanner({ recipes }: { recipes: RecipeProp[] }) {
         </div>
       )}
 
+      {/* Recent scans */}
+      {!preview && recentScans.length > 0 && (
+        <div className="space-y-2">
+          <p className="text-sm font-medium">Recent scans</p>
+          <div className="space-y-1">
+            {recentScans.map((scan) => (
+              <button
+                key={scan.id}
+                onClick={() => {
+                  setIngredients(scan.ingredients)
+                  setMatching(null)
+                  setSuggestions([])
+                  setError("")
+                }}
+                className="w-full text-left px-4 py-3 bg-muted rounded-xl hover:bg-muted/80 transition-colors"
+              >
+                <p className="text-sm font-medium">{formatScanLabel(scan)}</p>
+                <p className="text-xs text-muted-foreground mt-0.5 truncate">
+                  {scan.ingredients.slice(0, 6).join(", ")}
+                  {scan.ingredients.length > 6 ? ` +${scan.ingredients.length - 6} more` : ""}
+                </p>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Empty state */}
-      {!preview && (
+      {!preview && recentScans.length === 0 && (
         <p className="text-center text-xs text-muted-foreground py-2">
           AI scans your fridge, you confirm what's there, then we find recipes you can cook right now
         </p>

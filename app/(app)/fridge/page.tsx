@@ -1,11 +1,22 @@
 import HeaderControls from "@/components/header-controls"
 import FridgeScanner from "@/components/fridge-scanner"
 import { db } from "@/lib/db"
+import { fridgeScans } from "@/lib/db/schema"
+import { desc, eq } from "drizzle-orm"
+import { auth } from "@/lib/auth"
 
 export default async function FridgePage() {
-  const recipes = await db.query.recipes.findMany({
-    columns: { id: true, title: true, slug: true, mealType: true, imageUrl: true, ingredients: true },
-  })
+  const session = await auth()
+  const userId = session?.user?.id
+
+  const [recipes, recentScans] = await Promise.all([
+    db.query.recipes.findMany({
+      columns: { id: true, title: true, slug: true, mealType: true, imageUrl: true, ingredients: true },
+    }),
+    userId
+      ? db.select().from(fridgeScans).where(eq(fridgeScans.userId, userId)).orderBy(desc(fridgeScans.scannedAt)).limit(5)
+      : Promise.resolve([]),
+  ])
 
   return (
     <div className="max-w-2xl mx-auto px-4 pt-8 pb-6">
@@ -16,7 +27,7 @@ export default async function FridgePage() {
         </div>
         <HeaderControls />
       </div>
-      <FridgeScanner recipes={recipes} />
+      <FridgeScanner recipes={recipes} recentScans={recentScans} />
     </div>
   )
 }

@@ -182,6 +182,13 @@ export const userPreferences = pgTable("user_preferences", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 })
 
+export const fridgeScans = pgTable("fridge_scans", {
+  id: serial("id").primaryKey(),
+  userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  ingredients: jsonb("ingredients").$type<string[]>().notNull().default([]),
+  scannedAt: timestamp("scanned_at").defaultNow().notNull(),
+})
+
 export const pushSubscriptions = pgTable(
   "push_subscriptions",
   {

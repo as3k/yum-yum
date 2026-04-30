@@ -16,6 +16,7 @@ import {
   userRecipeRatings,
   pushSubscriptions,
   userPreferences,
+  fridgeScans,
   type FodmapFlag,
   type Ingredient,
   type Instruction,
@@ -888,6 +889,14 @@ export async function suggestFromFridge(ingredients: string[]): Promise<Discover
     healthNotes: r.healthNotes ?? [],
     missingIngredients: r.missingIngredients ?? [],
   }))
+}
+
+export async function saveFridgeScan(ingredients: string[]) {
+  const session = await auth()
+  if (!session?.user?.id) throw new Error("Unauthorized")
+
+  await db.insert(fridgeScans).values({ userId: session.user.id, ingredients })
+  revalidatePath("/fridge")
 }
 
 export async function saveUserPreferences(prefs: {
