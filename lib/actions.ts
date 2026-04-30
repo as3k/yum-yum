@@ -521,7 +521,7 @@ export async function discoverRecipes(query: string): Promise<DiscoveryResult[]>
       tags: r.tags ?? [],
       fodmapFlags: [],
       nutritionPerServing: r.estimatedNutritionPerServing ?? null,
-      ingredients: r.ingredients.map((ing) => ({
+      ingredients: (r.ingredients ?? []).map((ing) => ({
         name: ing.name,
         quantity: ing.quantity,
         unit: ing.unit,
