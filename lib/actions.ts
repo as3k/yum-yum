@@ -685,6 +685,79 @@ export async function swapMealSlot(slotId: number, newRecipeId: number) {
   revalidatePath("/plan")
 }
 
+export type FridgeMatch = {
+  id: number
+  status: "full" | "close"
+  missingIngredients: string[]
+}
+
+export async function matchFridgeToRecipes(
+  fridgeIngredients: string[],
+  recipes: { id: number; title: string; ingredients: string[] }[]
+): Promise<FridgeMatch[]> {
+  const session = await auth()
+  if (!session?.user?.id) throw new Error("Unauthorized")
+
+  const client = new OpenAI()
+  const response = await client.chat.completions.create({
+    model: "gpt-4o-mini",
+    tools: [
+      {
+        type: "function",
+        function: {
+          name: "evaluate_recipes",
+          description: "Evaluate which recipes can be made from fridge ingredients",
+          parameters: {
+            type: "object",
+            properties: {
+              matches: {
+                type: "array",
+                items: {
+                  type: "object",
+                  properties: {
+                    id: { type: "integer", description: "Recipe ID" },
+                    status: {
+                      type: "string",
+                      enum: ["full", "close"],
+                      description: "full = makeable with fridge + pantry staples; close = missing 1-2 non-critical main ingredients",
+                    },
+                    missingIngredients: {
+                      type: "array",
+                      items: { type: "string" },
+                      description: "Main ingredients not in fridge (empty for full matches)",
+                    },
+                  },
+                  required: ["id", "status", "missingIngredients"],
+                },
+              },
+            },
+            required: ["matches"],
+          },
+        },
+      },
+    ],
+    tool_choice: { type: "function", function: { name: "evaluate_recipes" } },
+    messages: [
+      {
+        role: "system",
+        content:
+          "Evaluate which recipes a person can make given their fridge contents. Pantry staples are always available: salt, pepper, oil, vinegar, butter, common spices (cumin, paprika, oregano, chili flakes, garlic powder), soy sauce, mustard, hot sauce. Only flag missing MAIN ingredients (proteins, fresh produce, dairy, specialty items). Return 'full' if makeable with fridge + staples. Return 'close' if missing 1-2 non-critical main ingredients. Skip entirely (don't include in output) if missing core ingredients that define the dish (e.g. no chicken for chicken curry).",
+      },
+      {
+        role: "user",
+        content: `Fridge: ${fridgeIngredients.join(", ")}\n\nRecipes to evaluate:\n${recipes.map((r) => `ID ${r.id} — ${r.title}: ${r.ingredients.join(", ")}`).join("\n")}`,
+      },
+    ],
+  })
+
+  const toolCall = response.choices[0]?.message?.tool_calls?.[0]
+  if (!toolCall || toolCall.type !== "function") return []
+
+  const { matches } = JSON.parse(toolCall.function.arguments) as { matches: FridgeMatch[] }
+  return matches.filter((m) => m.status === "full" || m.status === "close")
+    .sort((a, b) => (a.status === "full" ? -1 : 1) - (b.status === "full" ? -1 : 1))
+}
+
 export async function suggestFromFridge(ingredients: string[]): Promise<DiscoveryResult[]> {
   const session = await auth()
   if (!session?.user?.id) throw new Error("Unauthorized")

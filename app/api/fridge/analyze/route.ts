@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import OpenAI from "openai"
 import { auth } from "@/lib/auth"
-import { db } from "@/lib/db"
-import type { Ingredient } from "@/lib/db/schema"
 
 export async function POST(req: NextRequest) {
   const session = await auth()
@@ -46,26 +44,5 @@ export async function POST(req: NextRequest) {
     ingredients = []
   }
 
-  // Match against existing recipes
-  const allRecipes = await db.query.recipes.findMany({
-    columns: { id: true, title: true, slug: true, mealType: true, imageUrl: true, ingredients: true },
-  })
-
-  const fridgeLower = ingredients.map((i) => i.toLowerCase())
-
-  const scored = allRecipes.map((r) => {
-    const recipeIngredients = (r.ingredients as Ingredient[] ?? []).map((i) => i.name.toLowerCase())
-    const matched = recipeIngredients.filter((name) =>
-      fridgeLower.some((fi) => name.includes(fi) || fi.includes(name))
-    )
-    return { ...r, matchCount: matched.length, matchedIngredients: matched }
-  })
-
-  const matching = scored
-    .filter((r) => r.matchCount > 0)
-    .sort((a, b) => b.matchCount - a.matchCount)
-    .slice(0, 6)
-    .map(({ ingredients: _ing, ...r }) => r)
-
-  return NextResponse.json({ ingredients, matchingRecipes: matching })
+  return NextResponse.json({ ingredients })
 }

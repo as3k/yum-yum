@@ -4,8 +4,8 @@ import { useRef, useState, KeyboardEvent } from "react"
 import { Camera, X, Loader2, Sparkles, ChevronRight, Plus, Search } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
-import { suggestFromFridge } from "@/lib/actions"
-import type { DiscoveryResult } from "@/lib/actions"
+import { suggestFromFridge, matchFridgeToRecipes } from "@/lib/actions"
+import type { DiscoveryResult, FridgeMatch } from "@/lib/actions"
 import type { Ingredient } from "@/lib/db/schema"
 
 interface RecipeProp {
@@ -17,28 +17,9 @@ interface RecipeProp {
   ingredients: unknown
 }
 
-interface MatchedRecipe {
-  id: number
+interface MatchedRecipe extends FridgeMatch {
   title: string
   slug: string
-  mealType: string
-  matchCount: number
-  matchedIngredients: string[]
-}
-
-function matchRecipes(fridgeItems: string[], recipes: RecipeProp[]): MatchedRecipe[] {
-  const fridgeLower = fridgeItems.map((i) => i.toLowerCase())
-  return recipes
-    .map((r) => {
-      const recipeIngs = ((r.ingredients as Ingredient[]) ?? []).map((i) => i.name.toLowerCase())
-      const matched = recipeIngs.filter((name) =>
-        fridgeLower.some((fi) => name.includes(fi) || fi.includes(name))
-      )
-      return { id: r.id, title: r.title, slug: r.slug, mealType: r.mealType, matchCount: matched.length, matchedIngredients: matched }
-    })
-    .filter((r) => r.matchCount > 0)
-    .sort((a, b) => b.matchCount - a.matchCount)
-    .slice(0, 8)
 }
 
 export default function FridgeScanner({ recipes }: { recipes: RecipeProp[] }) {
@@ -50,8 +31,8 @@ export default function FridgeScanner({ recipes }: { recipes: RecipeProp[] }) {
   const [addText, setAddText] = useState("")
   const [error, setError] = useState("")
 
-  // Step 2: results
   const [matching, setMatching] = useState<MatchedRecipe[] | null>(null)
+  const [matchLoading, setMatchLoading] = useState(false)
   const [suggesting, setSuggesting] = useState(false)
   const [suggestions, setSuggestions] = useState<DiscoveryResult[]>([])
 
@@ -99,8 +80,30 @@ export default function FridgeScanner({ recipes }: { recipes: RecipeProp[] }) {
     if (e.key === "Enter") addIngredient()
   }
 
-  function findRecipes() {
-    setMatching(matchRecipes(ingredients, recipes))
+  async function findRecipes() {
+    setMatchLoading(true)
+    setMatching(null)
+    setSuggestions([])
+    try {
+      const recipeData = recipes.map((r) => ({
+        id: r.id,
+        title: r.title,
+        ingredients: ((r.ingredients as Ingredient[]) ?? []).map((i) => i.name),
+      }))
+      const matches = await matchFridgeToRecipes(ingredients, recipeData)
+      const recipeMap = new Map(recipes.map((r) => [r.id, r]))
+      setMatching(
+        matches.map((m) => ({
+          ...m,
+          title: recipeMap.get(m.id)?.title ?? "",
+          slug: recipeMap.get(m.id)?.slug ?? "",
+        }))
+      )
+    } catch {
+      setError("Couldn't match recipes — try again.")
+    } finally {
+      setMatchLoading(false)
+    }
   }
 
   async function handleSuggest() {
@@ -184,10 +187,7 @@ export default function FridgeScanner({ recipes }: { recipes: RecipeProp[] }) {
 
           <div className="flex flex-wrap gap-2">
             {ingredients.map((ing, i) => (
-              <span
-                key={i}
-                className="flex items-center gap-1.5 text-xs bg-muted px-3 py-1.5 rounded-full"
-              >
+              <span key={i} className="flex items-center gap-1.5 text-xs bg-muted px-3 py-1.5 rounded-full">
                 {ing}
                 <button
                   onClick={() => removeIngredient(i)}
@@ -223,10 +223,20 @@ export default function FridgeScanner({ recipes }: { recipes: RecipeProp[] }) {
           {!didSearch && (
             <button
               onClick={findRecipes}
-              className="w-full h-11 bg-foreground text-background text-sm font-medium rounded-xl hover:opacity-80 transition-opacity flex items-center justify-center gap-2"
+              disabled={matchLoading}
+              className="w-full h-11 bg-foreground text-background text-sm font-medium rounded-xl hover:opacity-80 transition-opacity disabled:opacity-40 flex items-center justify-center gap-2"
             >
-              <Search size={15} />
-              Find recipes with these ingredients
+              {matchLoading ? (
+                <>
+                  <Loader2 size={15} className="animate-spin" />
+                  Checking your recipes…
+                </>
+              ) : (
+                <>
+                  <Search size={15} />
+                  Find recipes with these ingredients
+                </>
+              )}
             </button>
           )}
         </div>
@@ -238,27 +248,31 @@ export default function FridgeScanner({ recipes }: { recipes: RecipeProp[] }) {
           {matching!.length > 0 ? (
             <>
               <p className="text-sm font-medium">Recipes you can make</p>
-              <div className="space-y-1">
+              <div className="space-y-1.5">
                 {matching!.map((r) => (
                   <Link
                     key={r.id}
                     href={`/recipes/${r.slug}`}
-                    className="flex items-center justify-between px-4 py-3 bg-muted rounded-xl hover:bg-muted/80 transition-colors"
+                    className="flex items-start justify-between px-4 py-3 bg-muted rounded-xl hover:bg-muted/80 transition-colors gap-3"
                   >
-                    <div className="min-w-0">
+                    <div className="min-w-0 space-y-0.5">
                       <p className="text-sm font-medium truncate">{r.title}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {r.matchedIngredients.slice(0, 3).join(", ")}
-                        {r.matchedIngredients.length > 3 ? ` +${r.matchedIngredients.length - 3} more` : ""}
-                      </p>
+                      {r.missingIngredients.length > 0 && (
+                        <p className="text-xs text-amber-500">
+                          Need to grab: {r.missingIngredients.join(", ")}
+                        </p>
+                      )}
+                      {r.missingIngredients.length === 0 && (
+                        <p className="text-xs text-green-500">Ready to make</p>
+                      )}
                     </div>
-                    <ChevronRight size={14} className="text-muted-foreground shrink-0 ml-3" />
+                    <ChevronRight size={14} className="text-muted-foreground shrink-0 mt-0.5" />
                   </Link>
                 ))}
               </div>
             </>
           ) : (
-            <p className="text-sm text-muted-foreground">No matching recipes — try the AI suggestions below.</p>
+            <p className="text-sm text-muted-foreground">No saved recipes match — try the AI ideas below.</p>
           )}
 
           {/* AI suggestions */}
@@ -309,7 +323,7 @@ export default function FridgeScanner({ recipes }: { recipes: RecipeProp[] }) {
         </div>
       )}
 
-      {/* Empty state prompt */}
+      {/* Empty state */}
       {!preview && (
         <p className="text-center text-xs text-muted-foreground py-2">
           AI scans your fridge, you confirm what's there, then we find recipes you can cook right now
