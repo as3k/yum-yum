@@ -1,15 +1,13 @@
 import { db } from "@/lib/db"
-import { mealPlans, mealPlanSlots, recipes, userRecipeFavorites, userPreferences } from "@/lib/db/schema"
-import { desc, eq, lte, and } from "drizzle-orm"
+import { mealPlans, mealPlanSlots, recipes, userRecipeFavorites } from "@/lib/db/schema"
+import { desc, eq, lte } from "drizzle-orm"
 import Link from "next/link"
 import WeekGrid from "@/components/week-grid"
 import PlanEditor, { type EditableDay, type RecipeOption } from "@/components/plan-editor"
-import TodayDashboard from "@/components/today-dashboard"
 import { formatWeekRange, getNextWeekStart, getWeekDates, todayStr, getMondayOfWeek } from "@/lib/utils"
 import { auth } from "@/lib/auth"
 import { cookies } from "next/headers"
 import { Calendar } from "lucide-react"
-import HeaderControls from "@/components/header-controls"
 
 export default async function PlanPage({
   searchParams,
@@ -20,13 +18,11 @@ export default async function PlanPage({
   const tz = decodeURIComponent((await cookies()).get("tz")?.value ?? "")
   const today = todayStr(tz || undefined)
 
-  // Current/most-recent plan
   const currentPlan = await db.query.mealPlans.findFirst({
     where: lte(mealPlans.weekStart, today),
     orderBy: [desc(mealPlans.weekStart)],
   })
 
-  // Snap to Monday of current week as fallback
   const todayDate = new Date(today + "T00:00:00")
   const monday = getMondayOfWeek(todayDate)
   const thisWeekMonday = [
@@ -38,13 +34,11 @@ export default async function PlanPage({
   const currentWeekStart = currentPlan?.weekStart ?? thisWeekMonday
   const nextWeekStart = getNextWeekStart(currentWeekStart)
 
-  // Editable when: next week tab OR current week tab with no existing plan
   const isEditing =
     weekParam === nextWeekStart ||
     (weekParam === currentWeekStart && !currentPlan)
 
   const session = await auth()
-  const firstName = session?.user?.name?.split(" ")[0] ?? "there"
 
   // ── Editable view ──────────────────────────────────────────────────────────
   if (isEditing && weekParam) {
@@ -72,7 +66,6 @@ export default async function PlanPage({
       : []
 
     const favoriteIds = new Set(favorites.map((f) => f.recipeId))
-
     const recipeOptions: RecipeOption[] = allRecipes.map((r) => ({
       id: r.id,
       title: r.title,
@@ -87,71 +80,35 @@ export default async function PlanPage({
 
     const initialDays: EditableDay[] = weekDates.map((date) => ({
       date,
-      breakfast: slot(date, "breakfast")
-        ? { id: slot(date, "breakfast")!.id, recipeId: slot(date, "breakfast")!.recipeId!, recipeTitle: slot(date, "breakfast")!.recipeTitle ?? "", recipeSlug: slot(date, "breakfast")!.recipeSlug ?? "" }
-        : null,
-      lunch: slot(date, "lunch")
-        ? { id: slot(date, "lunch")!.id, recipeId: slot(date, "lunch")!.recipeId!, recipeTitle: slot(date, "lunch")!.recipeTitle ?? "", recipeSlug: slot(date, "lunch")!.recipeSlug ?? "" }
-        : null,
-      dinner: slot(date, "dinner")
-        ? { id: slot(date, "dinner")!.id, recipeId: slot(date, "dinner")!.recipeId!, recipeTitle: slot(date, "dinner")!.recipeTitle ?? "", recipeSlug: slot(date, "dinner")!.recipeSlug ?? "" }
-        : null,
-      snack: slot(date, "snack")
-        ? { id: slot(date, "snack")!.id, recipeId: slot(date, "snack")!.recipeId!, recipeTitle: slot(date, "snack")!.recipeTitle ?? "", recipeSlug: slot(date, "snack")!.recipeSlug ?? "" }
-        : null,
+      breakfast: slot(date, "breakfast") ? { id: slot(date, "breakfast")!.id, recipeId: slot(date, "breakfast")!.recipeId!, recipeTitle: slot(date, "breakfast")!.recipeTitle ?? "", recipeSlug: slot(date, "breakfast")!.recipeSlug ?? "" } : null,
+      lunch: slot(date, "lunch") ? { id: slot(date, "lunch")!.id, recipeId: slot(date, "lunch")!.recipeId!, recipeTitle: slot(date, "lunch")!.recipeTitle ?? "", recipeSlug: slot(date, "lunch")!.recipeSlug ?? "" } : null,
+      dinner: slot(date, "dinner") ? { id: slot(date, "dinner")!.id, recipeId: slot(date, "dinner")!.recipeId!, recipeTitle: slot(date, "dinner")!.recipeTitle ?? "", recipeSlug: slot(date, "dinner")!.recipeSlug ?? "" } : null,
+      snack: slot(date, "snack") ? { id: slot(date, "snack")!.id, recipeId: slot(date, "snack")!.recipeId!, recipeTitle: slot(date, "snack")!.recipeTitle ?? "", recipeSlug: slot(date, "snack")!.recipeSlug ?? "" } : null,
     }))
-
-    const isThisWeek = weekParam === currentWeekStart
 
     return (
       <div className="max-w-2xl mx-auto px-4 pt-8 pb-6">
-        <div className="flex items-start justify-between mb-5">
-          <div>
-            <p className="text-xs text-muted-foreground">Hey {firstName} 🌱</p>
-            <h1 className="text-2xl font-bold tracking-tight leading-tight">
-              {isThisWeek ? "Here's your week" : "Plan next week"}
-            </h1>
-          </div>
-          <HeaderControls />
+        <div className="mb-5">
+          <h1 className="text-2xl font-bold tracking-tight">
+            {weekParam === currentWeekStart ? "This week" : "Next week"}
+          </h1>
+          <p className="text-sm text-muted-foreground mt-0.5">{formatWeekRange(weekParam)}</p>
         </div>
-        <PlanHeader
-          currentWeekStart={currentWeekStart}
-          nextWeekStart={nextWeekStart}
-          activeWeek={weekParam}
-          noCurrentPlan={!currentPlan}
-        />
-        <div className="flex items-center justify-between mb-5">
-          <span className="text-sm text-muted-foreground">{formatWeekRange(weekParam)}</span>
-        </div>
-        <PlanEditor
-          weekStart={weekParam}
-          initialDays={initialDays}
-          allRecipes={recipeOptions}
-        />
+        <PlanHeader currentWeekStart={currentWeekStart} nextWeekStart={nextWeekStart} activeWeek={weekParam} noCurrentPlan={!currentPlan} />
+        <PlanEditor weekStart={weekParam} initialDays={initialDays} allRecipes={recipeOptions} />
       </div>
     )
   }
 
-  // ── Empty state (no plan, not in edit mode) ────────────────────────────────
+  // ── Empty state ────────────────────────────────────────────────────────────
   if (!currentPlan) {
     return (
       <div className="max-w-2xl mx-auto px-4 pt-8 pb-6">
-        <div className="flex items-start justify-between mb-5">
-          <div>
-            <p className="text-xs text-muted-foreground">Hey {firstName} 🌱</p>
-            <h1 className="text-2xl font-bold tracking-tight">Let's get cooking</h1>
-          </div>
-          <HeaderControls />
-        </div>
-        <PlanHeader
-          currentWeekStart={currentWeekStart}
-          nextWeekStart={nextWeekStart}
-          activeWeek={currentWeekStart}
-          noCurrentPlan={true}
-        />
+        <h1 className="text-2xl font-bold tracking-tight mb-5">Your week</h1>
+        <PlanHeader currentWeekStart={currentWeekStart} nextWeekStart={nextWeekStart} activeWeek={currentWeekStart} noCurrentPlan={true} />
         <div className="pt-16 text-center space-y-3">
           <Calendar size={32} className="mx-auto text-muted-foreground opacity-40" />
-          <p className="text-muted-foreground text-sm">Nothing planned yet!</p>
+          <p className="text-muted-foreground text-sm">Nothing planned yet</p>
           <Link
             href={`/plan?week=${currentWeekStart}`}
             className="inline-flex items-center gap-1.5 text-sm font-medium px-4 h-9 bg-accent text-white rounded hover:opacity-80 transition-opacity"
@@ -163,72 +120,27 @@ export default async function PlanPage({
     )
   }
 
-  // ── Current week read-only view ────────────────────────────────────────────
-  const userId = session?.user?.id
-
-  const [slots, prefs, snackIdeas, swapRecipes] = await Promise.all([
-    db
-      .select({
-        id: mealPlanSlots.id,
-        dayDate: mealPlanSlots.dayDate,
-        mealType: mealPlanSlots.mealType,
-        notes: mealPlanSlots.notes,
-        recipe: {
-          id: recipes.id,
-          title: recipes.title,
-          slug: recipes.slug,
-          totalTimeMin: recipes.totalTimeMin,
-          nutritionPerServing: recipes.nutritionPerServing,
-          fodmapFlags: recipes.fodmapFlags,
-          storageNotes: recipes.storageNotes,
-          maxStorageDays: recipes.maxStorageDays,
-        },
-      })
-      .from(mealPlanSlots)
-      .leftJoin(recipes, eq(mealPlanSlots.recipeId, recipes.id))
-      .where(eq(mealPlanSlots.mealPlanId, currentPlan.id)),
-    userId
-      ? db.query.userPreferences.findFirst({ where: eq(userPreferences.userId, userId) })
-      : null,
-    db.query.recipes.findMany({
-      where: eq(recipes.mealType, "snack"),
-      orderBy: (r, { asc }) => [asc(r.title)],
-      limit: 6,
-    }),
-    db.query.recipes.findMany({
-      columns: { id: true, title: true, mealType: true },
-      orderBy: (r, { asc }) => [asc(r.title)],
-    }),
-  ])
-
-  const todaySlots = slots
-    .filter((s) => s.dayDate === today)
-    .map((s) => ({
-      id: s.id,
-      mealType: s.mealType,
-      recipe: s.recipe?.id ? {
-        id: s.recipe.id,
-        title: s.recipe.title ?? "",
-        slug: s.recipe.slug ?? "",
-        nutritionPerServing: s.recipe.nutritionPerServing as import("@/lib/db/schema").NutritionData | null,
-        fodmapFlags: (s.recipe.fodmapFlags ?? []) as import("@/lib/db/schema").FodmapFlag[],
-        storageNotes: s.recipe.storageNotes ?? null,
-        maxStorageDays: s.recipe.maxStorageDays ?? null,
-      } : null,
-    }))
-
-  // Per-day calorie totals for weekly bars
-  const weekCalories = Array.from({ length: 7 }, (_, i) => {
-    const d = new Date(currentWeekStart + "T00:00:00")
-    d.setDate(d.getDate() + i)
-    const date = [d.getFullYear(), String(d.getMonth() + 1).padStart(2, "0"), String(d.getDate()).padStart(2, "0")].join("-")
-    const daySlots = slots.filter((s) => s.dayDate === date && s.recipe?.nutritionPerServing)
-    const calories = daySlots.reduce((sum, s) => {
-      const n = s.recipe?.nutritionPerServing as import("@/lib/db/schema").NutritionData | null
-      return sum + (n?.calories ?? 0)
-    }, 0)
-    return { date, calories }
-  })
+  // ── Read-only week grid ────────────────────────────────────────────────────
+  const slots = await db
+    .select({
+      id: mealPlanSlots.id,
+      dayDate: mealPlanSlots.dayDate,
+      mealType: mealPlanSlots.mealType,
+      notes: mealPlanSlots.notes,
+      recipe: {
+        id: recipes.id,
+        title: recipes.title,
+        slug: recipes.slug,
+        totalTimeMin: recipes.totalTimeMin,
+        nutritionPerServing: recipes.nutritionPerServing,
+        fodmapFlags: recipes.fodmapFlags,
+        storageNotes: recipes.storageNotes,
+        maxStorageDays: recipes.maxStorageDays,
+      },
+    })
+    .from(mealPlanSlots)
+    .leftJoin(recipes, eq(mealPlanSlots.recipeId, recipes.id))
+    .where(eq(mealPlanSlots.mealPlanId, currentPlan.id))
 
   const dates = [...new Set(slots.map((s) => s.dayDate))].sort()
   const days = dates.map((date) => ({
@@ -241,33 +153,12 @@ export default async function PlanPage({
 
   return (
     <div className="max-w-2xl mx-auto px-4 pt-8 pb-6">
-      <div className="flex items-start justify-between mb-5">
-        <div>
-          <p className="text-xs text-muted-foreground">Hey {firstName} 🌱</p>
-          <h1 className="text-2xl font-bold tracking-tight leading-tight">Here's your week</h1>
-        </div>
-        <HeaderControls />
+      <div className="mb-5">
+        <h1 className="text-2xl font-bold tracking-tight">Your week</h1>
+        <p className="text-sm text-muted-foreground mt-0.5">{formatWeekRange(currentWeekStart)}</p>
       </div>
-      <div className="space-y-6">
-        <TodayDashboard
-          today={today}
-          weekStart={currentWeekStart}
-          slots={todaySlots}
-          snackIdeas={snackIdeas.map((r) => ({ id: r.id, title: r.title, slug: r.slug }))}
-          calorieTarget={prefs?.calorieTarget ?? null}
-          weekCalories={weekCalories}
-          swapRecipes={swapRecipes.map((r) => ({ id: r.id, title: r.title, mealType: r.mealType }))}
-        />
-        <div>
-          <PlanHeader
-            currentWeekStart={currentWeekStart}
-            nextWeekStart={nextWeekStart}
-            activeWeek={currentWeekStart}
-            noCurrentPlan={false}
-          />
-          <WeekGrid days={days} today={today} />
-        </div>
-      </div>
+      <PlanHeader currentWeekStart={currentWeekStart} nextWeekStart={nextWeekStart} activeWeek={currentWeekStart} noCurrentPlan={false} />
+      <WeekGrid days={days} today={today} />
     </div>
   )
 }
@@ -288,9 +179,7 @@ function PlanHeader({
       <Link
         href={noCurrentPlan ? `/plan?week=${currentWeekStart}` : "/plan"}
         className={`flex-1 h-8 rounded text-sm font-medium flex items-center justify-center transition-colors ${
-          activeWeek === currentWeekStart
-            ? "bg-background text-foreground shadow-sm"
-            : "text-muted-foreground hover:text-foreground"
+          activeWeek === currentWeekStart ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
         }`}
       >
         This Week
@@ -298,9 +187,7 @@ function PlanHeader({
       <Link
         href={`/plan?week=${nextWeekStart}`}
         className={`flex-1 h-8 rounded text-sm font-medium flex items-center justify-center transition-colors ${
-          activeWeek === nextWeekStart
-            ? "bg-background text-foreground shadow-sm"
-            : "text-muted-foreground hover:text-foreground"
+          activeWeek === nextWeekStart ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
         }`}
       >
         Next Week
