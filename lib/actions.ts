@@ -7,6 +7,9 @@ import { auth } from "./auth"
 import { db } from "./db"
 import {
   groceryItems,
+  groceryLists,
+  households,
+  householdMembers,
   mealPlans,
   mealPlanSlots,
   meals,
@@ -958,4 +961,41 @@ export async function saveUserPreferences(prefs: {
 
   revalidatePath("/settings")
   revalidatePath("/plan")
+}
+
+export async function joinHousehold(code: string) {
+  const session = await auth()
+  if (!session?.user?.id) throw new Error("Unauthorized")
+
+  const household = await db.query.households.findFirst({
+    where: eq(households.inviteCode, code.toUpperCase()),
+  })
+  if (!household) throw new Error("Invalid invite code")
+
+  await db
+    .insert(householdMembers)
+    .values({ householdId: household.id, userId: session.user.id, role: "member" })
+    .onConflictDoNothing()
+
+  revalidatePath("/settings/household")
+}
+
+export async function regenerateInviteCode() {
+  const session = await auth()
+  if (!session?.user?.id) throw new Error("Unauthorized")
+  const householdId = session.user.householdId
+  if (!householdId) throw new Error("No household")
+
+  const membership = await db.query.householdMembers.findFirst({
+    where: and(
+      eq(householdMembers.householdId, householdId),
+      eq(householdMembers.userId, session.user.id),
+    ),
+  })
+  if (membership?.role !== "owner") throw new Error("Only the owner can regenerate the invite code")
+
+  const newCode = Math.random().toString(36).slice(2, 7).toUpperCase()
+  await db.update(households).set({ inviteCode: newCode }).where(eq(households.id, householdId))
+
+  revalidatePath("/settings/household")
 }

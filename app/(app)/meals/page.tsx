@@ -1,15 +1,24 @@
 import { db } from "@/lib/db"
 import { meals, mealRecipes, recipes } from "@/lib/db/schema"
 import { eq } from "drizzle-orm"
+import { auth } from "@/lib/auth"
+import { redirect } from "next/navigation"
 import Link from "next/link"
 import { Plus, UtensilsCrossed } from "lucide-react"
 import type { NutritionData } from "@/lib/db/schema"
 import HeaderControls from "@/components/header-controls"
 
 export default async function MealsPage() {
-  const allMeals = await db.query.meals.findMany({
-    orderBy: (meals, { desc }) => [desc(meals.createdAt)],
-  })
+  const session = await auth()
+  if (!session?.user?.id) redirect("/login")
+  const householdId = session.user.householdId
+
+  const allMeals = householdId
+    ? await db.query.meals.findMany({
+        where: eq(meals.householdId, householdId),
+        orderBy: (meals, { desc }) => [desc(meals.createdAt)],
+      })
+    : []
 
   const mealIds = allMeals.map((m) => m.id)
 

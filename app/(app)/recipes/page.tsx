@@ -1,7 +1,8 @@
 import { db } from "@/lib/db"
 import { recipes, userRecipeFavorites, userRecipeRatings } from "@/lib/db/schema"
-import { eq } from "drizzle-orm"
+import { and, eq } from "drizzle-orm"
 import { auth } from "@/lib/auth"
+import { redirect } from "next/navigation"
 import RecipeCard from "@/components/recipe-card"
 import RecipeFilters from "@/components/recipe-filters"
 import Link from "next/link"
@@ -14,23 +15,36 @@ export default async function RecipesPage({
 }) {
   const { meal } = await searchParams
   const session = await auth()
-  const userId = session?.user?.id
+  if (!session?.user?.id) redirect("/login")
+  const userId = session.user.id
+  const householdId = session.user.householdId
+
+  if (!householdId) {
+    return (
+      <div className="max-w-2xl mx-auto px-4 pt-8 pb-6">
+        <div className="flex items-center gap-2 mb-5">
+          <Link href="/today" className="text-muted-foreground hover:text-foreground transition-colors -ml-3 p-2">
+            <ChevronLeft size={20} />
+          </Link>
+          <h1 className="text-xl font-semibold tracking-tight">Recipes</h1>
+        </div>
+        <p className="text-sm text-muted-foreground text-center mt-10">
+          You need a household to see recipes.{" "}
+          <Link href="/settings/household" className="underline underline-offset-2">Set one up</Link>
+        </p>
+      </div>
+    )
+  }
 
   const allRecipes = await db.query.recipes.findMany({
+    where: eq(recipes.householdId, householdId),
     orderBy: (r, { asc }) => [asc(r.mealType), asc(r.title)],
   })
 
-  const favorites = userId
-    ? await db.query.userRecipeFavorites.findMany({
-        where: eq(userRecipeFavorites.userId, userId),
-      })
-    : []
-
-  const ratings = userId
-    ? await db.query.userRecipeRatings.findMany({
-        where: eq(userRecipeRatings.userId, userId),
-      })
-    : []
+  const [favorites, ratings] = await Promise.all([
+    db.query.userRecipeFavorites.findMany({ where: eq(userRecipeFavorites.userId, userId) }),
+    db.query.userRecipeRatings.findMany({ where: eq(userRecipeRatings.userId, userId) }),
+  ])
 
   const favoriteIds = new Set(favorites.map((f) => f.recipeId))
   const ratingMap = new Map(ratings.map((r) => [r.recipeId, r.rating]))

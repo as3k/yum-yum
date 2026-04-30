@@ -1,6 +1,6 @@
 import { db } from "@/lib/db"
 import { mealPlans, mealPlanSlots, recipes, userRecipeFavorites } from "@/lib/db/schema"
-import { desc, eq, lte } from "drizzle-orm"
+import { and, desc, eq, lte } from "drizzle-orm"
 import Link from "next/link"
 import WeekGrid from "@/components/week-grid"
 import PlanEditor, { type EditableDay, type RecipeOption } from "@/components/plan-editor"
@@ -18,10 +18,15 @@ export default async function PlanPage({
   const tz = decodeURIComponent((await cookies()).get("tz")?.value ?? "")
   const today = todayStr(tz || undefined)
 
-  const currentPlan = await db.query.mealPlans.findFirst({
-    where: lte(mealPlans.weekStart, today),
-    orderBy: [desc(mealPlans.weekStart)],
-  })
+  const session = await auth()
+  const householdId = session?.user?.householdId ?? null
+
+  const currentPlan = householdId
+    ? await db.query.mealPlans.findFirst({
+        where: and(eq(mealPlans.householdId, householdId), lte(mealPlans.weekStart, today)),
+        orderBy: [desc(mealPlans.weekStart)],
+      })
+    : null
 
   const todayDate = new Date(today + "T00:00:00")
   const monday = getMondayOfWeek(todayDate)
@@ -44,16 +49,18 @@ export default async function PlanPage({
     weekParam === nextWeekStart ||
     (weekParam === currentWeekStart && !currentPlan)
 
-  const session = await auth()
-
   // ── Editable view ──────────────────────────────────────────────────────────
   if (isEditing && weekParam) {
     const userId = session?.user?.id
 
     const [existingPlan, allRecipes, favorites] = await Promise.all([
-      db.query.mealPlans.findFirst({ where: eq(mealPlans.weekStart, weekParam) }),
-      db.query.recipes.findMany(),
-      userId ? db.query.userRecipeFavorites.findMany() : Promise.resolve([]),
+      householdId
+        ? db.query.mealPlans.findFirst({ where: and(eq(mealPlans.householdId, householdId), eq(mealPlans.weekStart, weekParam)) })
+        : Promise.resolve(undefined),
+      householdId
+        ? db.query.recipes.findMany({ where: eq(recipes.householdId, householdId) })
+        : Promise.resolve([]),
+      userId ? db.query.userRecipeFavorites.findMany({ where: eq(userRecipeFavorites.userId, userId) }) : Promise.resolve([]),
     ])
 
     const existingSlots = existingPlan

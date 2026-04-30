@@ -1,13 +1,37 @@
 import { db } from "@/lib/db"
 import { groceryLists, groceryItems } from "@/lib/db/schema"
-import { desc, eq } from "drizzle-orm"
+import { and, desc, eq } from "drizzle-orm"
 import { formatWeekRange } from "@/lib/utils"
+import { auth } from "@/lib/auth"
+import { redirect } from "next/navigation"
 import GroceryList from "@/components/grocery-list"
 import Link from "next/link"
 import { ChevronLeft } from "lucide-react"
 
 export default async function GroceryPage() {
+  const session = await auth()
+  if (!session?.user?.id) redirect("/login")
+  const householdId = session.user.householdId
+
+  if (!householdId) {
+    return (
+      <div className="max-w-2xl mx-auto px-4 pt-8 pb-6">
+        <div className="flex items-center gap-2 mb-5">
+          <Link href="/today" className="text-muted-foreground hover:text-foreground transition-colors -ml-3 p-2">
+            <ChevronLeft size={20} />
+          </Link>
+          <h1 className="text-xl font-semibold tracking-tight">Shopping List</h1>
+        </div>
+        <p className="text-sm text-muted-foreground text-center mt-10">
+          You need a household to see grocery lists.{" "}
+          <Link href="/settings/household" className="underline underline-offset-2">Set one up</Link>
+        </p>
+      </div>
+    )
+  }
+
   const list = await db.query.groceryLists.findFirst({
+    where: eq(groceryLists.householdId, householdId),
     orderBy: [desc(groceryLists.weekStart)],
   })
 

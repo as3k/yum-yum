@@ -2,7 +2,7 @@
 
 import { useTheme } from "next-themes"
 import { useEffect, useState } from "react"
-import { Sun, Moon, Bell, BellOff, Heart, SlidersHorizontal, ChevronRight, Refrigerator, ShoppingCart } from "lucide-react"
+import { Sun, Moon, Bell, BellOff, Heart, SlidersHorizontal, ChevronRight, Refrigerator, ShoppingCart, Users } from "lucide-react"
 import Link from "next/link"
 import { subscribeToPush, unsubscribeFromPush } from "@/lib/actions"
 
@@ -177,6 +177,7 @@ export default function YouPageClient({ firstName, email }: { firstName: string;
           <RowLink href="/grocery" icon={ShoppingCart} label="Shopping List" sublabel="This week's groceries" />
           <RowLink href="/favorites" icon={Heart} label="Saved Recipes" sublabel="Your favorites" />
           <RowLink href="/settings" icon={SlidersHorizontal} label="Meal preferences" sublabel="Calorie target, meal times, reminders" />
+          <RowLink href="/settings/household" icon={Users} label="Household" sublabel="Invite code, members" />
         </div>
       </div>
     </div>
