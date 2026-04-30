@@ -4,7 +4,8 @@ import { eq } from "drizzle-orm"
 import { auth } from "@/lib/auth"
 import { redirect } from "next/navigation"
 import SettingsForm from "@/components/settings-form"
-import HeaderControls from "@/components/header-controls"
+import Link from "next/link"
+import { ChevronLeft } from "lucide-react"
 
 export default async function SettingsPage() {
   const session = await auth()
@@ -16,9 +17,12 @@ export default async function SettingsPage() {
 
   return (
     <div className="max-w-2xl mx-auto px-4 pt-8 pb-6">
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-xl font-semibold tracking-tight">Settings</h1>
-        <HeaderControls />
+      <div className="mb-6">
+        <Link href="/you" className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors mb-4">
+          <ChevronLeft size={16} />
+          You
+        </Link>
+        <h1 className="text-xl font-semibold tracking-tight">Meal preferences</h1>
       </div>
       <SettingsForm
         initialValues={{

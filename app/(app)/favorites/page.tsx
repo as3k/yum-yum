@@ -3,7 +3,8 @@ import { recipes, userRecipeFavorites, userRecipeRatings } from "@/lib/db/schema
 import { eq, inArray } from "drizzle-orm"
 import { auth } from "@/lib/auth"
 import RecipeCard from "@/components/recipe-card"
-import HeaderControls from "@/components/header-controls"
+import Link from "next/link"
+import { ChevronLeft } from "lucide-react"
 
 export default async function FavoritesPage() {
   const session = await auth()
@@ -24,8 +25,14 @@ export default async function FavoritesPage() {
 
   if (favorites.length === 0) {
     return (
-      <div className="max-w-2xl mx-auto px-4 pt-10 text-center">
-        <h1 className="text-xl font-semibold tracking-tight mb-3">Favorites</h1>
+      <div className="max-w-2xl mx-auto px-4 pt-8 pb-6">
+        <div className="mb-5">
+          <Link href="/you" className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors mb-4">
+            <ChevronLeft size={16} />
+            You
+          </Link>
+          <h1 className="text-xl font-semibold tracking-tight">Favorites</h1>
+        </div>
         <p className="text-muted-foreground text-sm">No favorites yet! Tap the heart on any recipe to save the good stuff.</p>
       </div>
     )
@@ -49,9 +56,12 @@ export default async function FavoritesPage() {
 
   return (
     <div className="max-w-2xl mx-auto px-4 pt-8 pb-6">
-      <div className="flex items-center justify-between mb-5">
+      <div className="mb-5">
+        <Link href="/you" className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors mb-4">
+          <ChevronLeft size={16} />
+          You
+        </Link>
         <h1 className="text-xl font-semibold tracking-tight">Favorites</h1>
-        <HeaderControls />
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {orderedRecipes.map((recipe) => (
