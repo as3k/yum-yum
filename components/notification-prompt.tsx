@@ -23,8 +23,26 @@ export default function NotificationPrompt() {
       setPermission("denied")
       return
     }
-    setPermission(Notification.permission)
+    const perm = Notification.permission
+    setPermission(perm)
     if (localStorage.getItem("push-dismissed") === "1") setDismissed(true)
+
+    if (perm === "granted") {
+      navigator.serviceWorker.ready.then(async (reg) => {
+        const existing = await reg.pushManager.getSubscription()
+        const sub = existing ?? await reg.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
+        })
+        await subscribeToPush({
+          endpoint: sub.endpoint,
+          keys: {
+            p256dh: btoa(String.fromCharCode(...new Uint8Array(sub.getKey("p256dh")!))),
+            auth: btoa(String.fromCharCode(...new Uint8Array(sub.getKey("auth")!))),
+          },
+        })
+      }).catch(() => {})
+    }
   }, [])
 
   async function handleEnable() {
