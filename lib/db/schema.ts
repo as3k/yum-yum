@@ -11,6 +11,7 @@ import {
   uuid,
   primaryKey,
   unique,
+  numeric,
 } from "drizzle-orm/pg-core"
 
 export const mealTypeEnum = pgEnum("meal_type", ["breakfast", "lunch", "dinner", "snack"])
@@ -43,13 +44,57 @@ export interface NutritionData {
   proteinG: number
 }
 
+// ── Households ────────────────────────────────────────────────────────────────
+
+export const households = pgTable("households", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  name: text("name").notNull(),
+  inviteCode: text("invite_code").unique().notNull(),
+  createdBy: uuid("created_by"),  // FK set below via lazy ref
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+})
+
+export const householdMembers = pgTable(
+  "household_members",
+  {
+    householdId: uuid("household_id")
+      .notNull()
+      .references(() => households.id, { onDelete: "cascade" }),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    role: text("role").default("member").notNull(), // 'owner' | 'member'
+    joinedAt: timestamp("joined_at").defaultNow().notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.householdId, t.userId] })]
+)
+
+// ── Users ─────────────────────────────────────────────────────────────────────
+
 export const users = pgTable("users", {
   id: uuid("id").defaultRandom().primaryKey(),
   email: text("email").unique().notNull(),
   passwordHash: text("password_hash").notNull(),
   name: text("name").notNull(),
+  role: text("role").default("user").notNull(), // 'user' | 'admin'
   createdAt: timestamp("created_at").defaultNow().notNull(),
 })
+
+// ── Waitlist ──────────────────────────────────────────────────────────────────
+
+export const waitlist = pgTable("waitlist", {
+  id: serial("id").primaryKey(),
+  email: text("email").unique().notNull(),
+  name: text("name"),
+  message: text("message"),
+  status: text("status").default("pending").notNull(), // 'pending' | 'approved' | 'rejected'
+  inviteToken: text("invite_token").unique(),
+  tokenExpiresAt: timestamp("token_expires_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  approvedAt: timestamp("approved_at"),
+})
+
+// ── Recipes ───────────────────────────────────────────────────────────────────
 
 export const recipes = pgTable("recipes", {
   id: serial("id").primaryKey(),
@@ -73,9 +118,34 @@ export const recipes = pgTable("recipes", {
   fodmapFlags: jsonb("fodmap_flags").$type<FodmapFlag[]>().default([]),
   nutritionPerServing: jsonb("nutrition_per_serving").$type<NutritionData>(),
   addedDate: date("added_date"),
+  householdId: uuid("household_id").references(() => households.id, { onDelete: "cascade" }),
+  isCommunity: boolean("is_community").default(false).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 })
+
+// ── Community cookbook ────────────────────────────────────────────────────────
+
+export const communityRecipes = pgTable(
+  "community_recipes",
+  {
+    id: serial("id").primaryKey(),
+    sourceRecipeId: integer("source_recipe_id")
+      .notNull()
+      .references(() => recipes.id, { onDelete: "cascade" }),
+    publishedBy: uuid("published_by")
+      .notNull()
+      .references(() => users.id),
+    householdId: uuid("household_id")
+      .notNull()
+      .references(() => households.id),
+    forkCount: integer("fork_count").default(0).notNull(),
+    publishedAt: timestamp("published_at").defaultNow().notNull(),
+  },
+  (t) => [unique().on(t.sourceRecipeId)]
+)
+
+// ── User recipe interactions ───────────────────────────────────────────────────
 
 export const userRecipeFavorites = pgTable(
   "user_recipe_favorites",
@@ -108,12 +178,19 @@ export const userRecipeRatings = pgTable(
   (t) => [unique().on(t.userId, t.recipeId)]
 )
 
-export const mealPlans = pgTable("meal_plans", {
-  id: serial("id").primaryKey(),
-  weekStart: date("week_start").unique().notNull(),
-  createdBy: uuid("created_by").references(() => users.id),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-})
+// ── Meal plans ────────────────────────────────────────────────────────────────
+
+export const mealPlans = pgTable(
+  "meal_plans",
+  {
+    id: serial("id").primaryKey(),
+    weekStart: date("week_start").notNull(),
+    householdId: uuid("household_id").references(() => households.id, { onDelete: "cascade" }),
+    createdBy: uuid("created_by").references(() => users.id),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (t) => [unique().on(t.householdId, t.weekStart)]
+)
 
 export const mealPlanSlots = pgTable(
   "meal_plan_slots",
@@ -130,10 +207,13 @@ export const mealPlanSlots = pgTable(
   (t) => [unique().on(t.mealPlanId, t.dayDate, t.mealType)]
 )
 
+// ── Meals (composite meal definitions) ────────────────────────────────────────
+
 export const meals = pgTable("meals", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
   description: text("description"),
+  householdId: uuid("household_id").references(() => households.id, { onDelete: "cascade" }),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 })
 
@@ -148,9 +228,12 @@ export const mealRecipes = pgTable(
   (t) => [unique().on(t.mealId, t.recipeId)]
 )
 
+// ── Grocery ───────────────────────────────────────────────────────────────────
+
 export const groceryLists = pgTable("grocery_lists", {
   id: serial("id").primaryKey(),
   mealPlanId: integer("meal_plan_id").references(() => mealPlans.id),
+  householdId: uuid("household_id").references(() => households.id, { onDelete: "cascade" }),
   weekStart: date("week_start").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 })
@@ -167,13 +250,18 @@ export const groceryItems = pgTable("grocery_items", {
   checked: boolean("checked").default(false).notNull(),
   checkedAt: timestamp("checked_at"),
   recipeIds: integer("recipe_ids").array().default([]),
+  pricePerUnit: numeric("price_per_unit", { precision: 10, scale: 2 }),
+  estimatedTotal: numeric("estimated_total", { precision: 10, scale: 2 }),
 })
+
+// ── User preferences ──────────────────────────────────────────────────────────
 
 export const userPreferences = pgTable("user_preferences", {
   userId: uuid("user_id")
     .primaryKey()
     .references(() => users.id, { onDelete: "cascade" }),
   calorieTarget: integer("calorie_target"),
+  weeklyBudgetTarget: numeric("weekly_budget_target", { precision: 10, scale: 2 }),
   breakfastTime: text("breakfast_time").default("08:00"),
   lunchTime: text("lunch_time").default("12:30"),
   snackTime: text("snack_time").default("15:00"),
@@ -182,12 +270,16 @@ export const userPreferences = pgTable("user_preferences", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 })
 
+// ── Fridge scans ──────────────────────────────────────────────────────────────
+
 export const fridgeScans = pgTable("fridge_scans", {
   id: serial("id").primaryKey(),
   userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   ingredients: jsonb("ingredients").$type<string[]>().notNull().default([]),
   scannedAt: timestamp("scanned_at").defaultNow().notNull(),
 })
+
+// ── Push subscriptions ────────────────────────────────────────────────────────
 
 export const pushSubscriptions = pgTable(
   "push_subscriptions",

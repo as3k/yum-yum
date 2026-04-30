@@ -75,6 +75,9 @@ export async function setRating(recipeId: number, rating: number, slug: string) 
 }
 
 export async function toggleGroceryItem(id: number) {
+  const session = await auth()
+  if (!session?.user?.id) throw new Error("Unauthorized")
+
   const item = await db.query.groceryItems.findFirst({
     where: eq(groceryItems.id, id),
   })
@@ -92,6 +95,9 @@ export async function toggleGroceryItem(id: number) {
 }
 
 export async function uncheckAllGroceryItems(listId: number) {
+  const session = await auth()
+  if (!session?.user?.id) throw new Error("Unauthorized")
+
   await db
     .update(groceryItems)
     .set({ checked: false, checkedAt: null })
@@ -177,8 +183,10 @@ export async function updateRecipe(
   const session = await auth()
   if (!session?.user?.id) throw new Error("Unauthorized")
 
+  const householdId = session.user.householdId
   const existing = await db.query.recipes.findFirst({ where: eq(recipes.id, id) })
   if (!existing) throw new Error("Recipe not found")
+  if (householdId && existing.householdId && existing.householdId !== householdId) throw new Error("Forbidden")
 
   const newSlug = slugify(data.title)
 
@@ -221,6 +229,9 @@ export async function setMealPlanSlot(
   mealType: MealType,
   recipeId: number
 ) {
+  const session = await auth()
+  if (!session?.user?.id) throw new Error("Unauthorized")
+
   const plan = await getOrCreateMealPlan(weekStart)
   const [slot] = await db
     .insert(mealPlanSlots)
@@ -235,6 +246,9 @@ export async function setMealPlanSlot(
 }
 
 export async function removeMealPlanSlot(slotId: number) {
+  const session = await auth()
+  if (!session?.user?.id) throw new Error("Unauthorized")
+
   await db.delete(mealPlanSlots).where(eq(mealPlanSlots.id, slotId))
   revalidatePath("/plan")
 }
@@ -246,9 +260,10 @@ export async function generateAIMealPlan(weekStart: string, context?: string) {
   const today = new Date().toISOString().split("T")[0]
 
   // Fetch context in parallel
+  const userId = session.user.id
   const [allRecipes, favorites, lastWeekPlan] = await Promise.all([
     db.query.recipes.findMany(),
-    db.query.userRecipeFavorites.findMany(),
+    db.query.userRecipeFavorites.findMany({ where: eq(userRecipeFavorites.userId, userId) }),
     db.query.mealPlans.findFirst({
       where: lte(mealPlans.weekStart, today),
       orderBy: [desc(mealPlans.weekStart)],
@@ -613,6 +628,11 @@ export async function updateMeal(id: number, name: string, description: string |
   const session = await auth()
   if (!session?.user?.id) throw new Error("Unauthorized")
 
+  const existing = await db.query.meals.findFirst({ where: eq(meals.id, id) })
+  if (!existing) throw new Error("Meal not found")
+  const householdId = session.user.householdId
+  if (householdId && existing.householdId && existing.householdId !== householdId) throw new Error("Forbidden")
+
   await db.update(meals).set({ name, description: description || null }).where(eq(meals.id, id))
   await db.delete(mealRecipes).where(eq(mealRecipes.mealId, id))
   if (recipeIds.length > 0) {
@@ -628,6 +648,11 @@ export async function deleteMeal(id: number) {
   const session = await auth()
   if (!session?.user?.id) throw new Error("Unauthorized")
 
+  const existing = await db.query.meals.findFirst({ where: eq(meals.id, id) })
+  if (!existing) throw new Error("Meal not found")
+  const householdId = session.user.householdId
+  if (householdId && existing.householdId && existing.householdId !== householdId) throw new Error("Forbidden")
+
   await db.delete(meals).where(eq(meals.id, id))
   revalidatePath("/meals")
 }
@@ -635,6 +660,11 @@ export async function deleteMeal(id: number) {
 export async function deleteRecipe(id: number, slug: string) {
   const session = await auth()
   if (!session?.user?.id) throw new Error("Unauthorized")
+
+  const existing = await db.query.recipes.findFirst({ where: eq(recipes.id, id) })
+  if (!existing) throw new Error("Recipe not found")
+  const householdId = session.user.householdId
+  if (householdId && existing.householdId && existing.householdId !== householdId) throw new Error("Forbidden")
 
   await db.delete(recipes).where(eq(recipes.id, id))
   revalidatePath("/recipes")

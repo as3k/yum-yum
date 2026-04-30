@@ -3,7 +3,7 @@ import Credentials from "next-auth/providers/credentials"
 import { eq } from "drizzle-orm"
 import bcrypt from "bcryptjs"
 import { db } from "./db"
-import { users } from "./db/schema"
+import { users, householdMembers } from "./db/schema"
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   providers: [
@@ -26,7 +26,16 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         )
         if (!valid) return null
 
-        return { id: user.id, email: user.email, name: user.name }
+        const membership = await db.query.householdMembers.findFirst({
+          where: eq(householdMembers.userId, user.id),
+        })
+
+        return {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          householdId: membership?.householdId ?? null,
+        }
       },
     }),
   ],
@@ -34,12 +43,16 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   pages: { signIn: "/login" },
   callbacks: {
     jwt({ token, user }) {
-      if (user) token.id = user.id
+      if (user) {
+        token.id = user.id
+        token.householdId = (user as { householdId?: string | null }).householdId ?? null
+      }
       return token
     },
     session({ session, token }) {
       if (session.user && token.id) {
         session.user.id = token.id as string
+        session.user.householdId = (token.householdId as string | null) ?? null
       }
       return session
     },
