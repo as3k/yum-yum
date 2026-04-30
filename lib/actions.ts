@@ -688,9 +688,125 @@ export async function suggestFromFridge(ingredients: string[]): Promise<Discover
   const session = await auth()
   if (!session?.user?.id) throw new Error("Unauthorized")
 
-  return discoverRecipes(
-    `I have these ingredients in my fridge: ${ingredients.join(", ")}. Suggest 3-4 practical recipes I can make with what I have. Prioritize using as many of these ingredients as possible.`
-  )
+  const client = new OpenAI()
+  const response = await client.chat.completions.create({
+    model: "gpt-4o-mini",
+    tools: [
+      {
+        type: "function",
+        function: {
+          name: "suggest_recipes",
+          description: "Suggest recipes using only the provided ingredients",
+          parameters: {
+            type: "object",
+            properties: {
+              recipes: {
+                type: "array",
+                items: {
+                  type: "object",
+                  properties: {
+                    title: { type: "string" },
+                    mealType: { type: "string", enum: ["breakfast", "lunch", "dinner", "snack"] },
+                    description: { type: "string" },
+                    totalTimeMin: { type: "integer" },
+                    prepTimeMin: { type: "integer" },
+                    cookTimeMin: { type: "integer" },
+                    servings: { type: "integer" },
+                    tags: { type: "array", items: { type: "string" } },
+                    ingredients: {
+                      type: "array",
+                      items: {
+                        type: "object",
+                        properties: {
+                          name: { type: "string" },
+                          quantity: { type: "string" },
+                          unit: { type: "string" },
+                        },
+                        required: ["name"],
+                      },
+                    },
+                    instructions: {
+                      type: "array",
+                      items: {
+                        type: "object",
+                        properties: { step: { type: "integer" }, text: { type: "string" } },
+                        required: ["step", "text"],
+                      },
+                    },
+                    estimatedNutritionPerServing: {
+                      type: "object",
+                      properties: {
+                        calories: { type: "integer" },
+                        carbsG: { type: "integer" },
+                        fiberG: { type: "integer" },
+                        fatG: { type: "integer" },
+                        proteinG: { type: "integer" },
+                      },
+                      required: ["calories", "carbsG", "fiberG", "fatG", "proteinG"],
+                    },
+                    healthNotes: { type: "array", items: { type: "string" } },
+                  },
+                  required: ["title", "mealType", "description", "ingredients", "instructions", "estimatedNutritionPerServing", "healthNotes"],
+                },
+              },
+            },
+            required: ["recipes"],
+          },
+        },
+      },
+    ],
+    tool_choice: { type: "function", function: { name: "suggest_recipes" } },
+    messages: [
+      {
+        role: "system",
+        content:
+          "You suggest recipes using ONLY ingredients from the user's fridge list. Do not add any ingredient not on the list — not even salt, pepper, oil, or spices unless they appear in the list. Every ingredient in your recipes must come directly from the provided list. Low-FODMAP, low-carb preferred. Suggest 3-4 recipes.",
+      },
+      {
+        role: "user",
+        content: `My fridge contains: ${ingredients.join(", ")}\n\nSuggest recipes I can make using only these ingredients.`,
+      },
+    ],
+  })
+
+  const toolCall = response.choices[0]?.message?.tool_calls?.[0]
+  if (!toolCall || toolCall.type !== "function") throw new Error("No recipes returned")
+
+  const { recipes } = JSON.parse(toolCall.function.arguments) as {
+    recipes: Array<{
+      title: string
+      mealType: string
+      description?: string
+      totalTimeMin?: number
+      prepTimeMin?: number
+      cookTimeMin?: number
+      servings?: number
+      tags?: string[]
+      ingredients: Array<{ name: string; quantity?: string; unit?: string }>
+      instructions: Array<{ step: number; text: string }>
+      estimatedNutritionPerServing?: { calories: number; carbsG: number; fiberG: number; fatG: number; proteinG: number }
+      healthNotes?: string[]
+    }>
+  }
+
+  return recipes.map((r) => ({
+    recipe: {
+      title: r.title,
+      mealType: r.mealType as MealType,
+      description: r.description,
+      totalTimeMin: r.totalTimeMin,
+      prepTimeMin: r.prepTimeMin,
+      cookTimeMin: r.cookTimeMin,
+      servings: r.servings,
+      tags: r.tags ?? [],
+      fodmapFlags: [],
+      nutritionPerServing: r.estimatedNutritionPerServing ?? null,
+      ingredients: (r.ingredients ?? []).map((ing) => ({ name: ing.name, quantity: ing.quantity, unit: ing.unit })),
+      instructions: r.instructions.map((ins) => ({ step: ins.step, text: ins.text })),
+    },
+    nutrition: r.estimatedNutritionPerServing ?? null,
+    healthNotes: r.healthNotes ?? [],
+  }))
 }
 
 export async function saveUserPreferences(prefs: {
